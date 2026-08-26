@@ -226,7 +226,7 @@ export default function App() {
       const method = window.location.pathname === '/' ? 'replaceState' : 'pushState';
       window.history[method]({ view: activeView }, '', path);
     }
-    document.title = `NovaScribe AI — ${VIEW_TITLES[activeView]}`;
+    document.title = `CareScribe AI — ${VIEW_TITLES[activeView]}`;
   }, [activeView]);
 
   // Reflect browser back/forward navigation back into the active page.

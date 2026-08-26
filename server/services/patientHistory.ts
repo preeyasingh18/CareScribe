@@ -6,7 +6,7 @@
 //
 // Linking model
 // -------------
-// Across NovaScribe, a report / prescription / transcript record is saved with
+// Across CareScribe, a report / prescription / transcript record is saved with
 // the SAME `id` as its consultation (see ConsultationWorkspace handleSave). So
 // `consultationId === reportId === prescriptionId === transcriptId === consultation.id`.
 // Newer records also carry an explicit `consultationId`. We match on either, so

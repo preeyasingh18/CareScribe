@@ -1,6 +1,6 @@
-# NovaScribe AI — AI Medical Scribe
+# CareScribe AI — AI Medical Scribe
 
-NovaScribe turns a spoken consultation into a structured clinical report.
+CareScribe turns a spoken consultation into a structured clinical report.
 
 **Flow:** Record audio → OpenAI **Whisper** transcribes → doctor reviews/edits the transcript → **OpenAI** generates a structured medical report → doctor edits → save to **MongoDB** → reopen any time → download as **PDF / DOCX / TXT**. The dashboard updates from the database automatically.
 

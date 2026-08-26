@@ -470,7 +470,7 @@ app.listen(PORT, async () => {
   }
 
   console.log('');
-  console.log('🚀 NovaScribe API Started');
+  console.log('🚀 CareScribe API Started');
   console.log(`🌐 Server : http://localhost:${PORT}`);
   console.log(`🗄️ Database : ${dbStatus}`);
   console.log(`❤️ Health : http://localhost:${PORT}/api/health`);

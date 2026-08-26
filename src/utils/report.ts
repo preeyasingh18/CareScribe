@@ -465,7 +465,7 @@ export function buildReportHtml(report: ReportData, meta: ReportMeta = {}): stri
 </head>
 <body>
   <div class="header">
-    <div class="brand">NovaScribe AI</div>
+    <div class="brand">CareScribe AI</div>
     <h1>Clinical Report</h1>
     ${sub ? `<div class="sub">${sub}</div>` : ''}
   </div>

@@ -10,7 +10,7 @@ interface LogoProps {
 }
 
 /**
- * The single source of truth for the NovaScribe AI brand mark.
+ * The single source of truth for the CareScribe AI brand mark.
  * Every page/header must use this component so the icon, wordmark, size,
  * weight, spacing, alignment and colors stay identical everywhere.
  */
@@ -21,7 +21,7 @@ export default function Logo({ onClick, className = '', light = false }: LogoPro
         <Stethoscope size={22} strokeWidth={2.5} />
       </div>
       <span className={`font-bold text-xl tracking-tight ${light ? 'text-white' : 'text-slate-900'}`}>
-        NovaScribe AI
+        CareScribe AI
       </span>
     </>
   );

@@ -8,7 +8,7 @@ export interface WithId {
 /**
  * Generic data-access layer for an `id`-keyed collection.
  *
- * Every NovaScribe collection is keyed by an app-provided string `id`
+ * Every CareScribe collection is keyed by an app-provided string `id`
  * (not Mongo's ObjectId), so a single repository implementation serves them
  * all. API responses hide Mongo internals (`_id`) to keep shapes identical
  * to what the frontend expects.

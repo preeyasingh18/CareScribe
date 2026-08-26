@@ -2004,7 +2004,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
         <div className="flex-1 flex flex-col min-h-0">
           {/* Fixed header */}
           <div className="flex-shrink-0 p-4 border-b border-slate-200 bg-white shadow-sm z-10 flex justify-between items-center gap-2">
-            {/* Mobile-only NovaScribe logo — returns to the dashboard */}
+            {/* Mobile-only CareScribe logo — returns to the dashboard */}
             <Logo onClick={() => onExit?.()} className="md:hidden" />
             <h3 className="hidden md:flex font-bold text-slate-900 items-center gap-2">
               <FileText size={18} className="text-blue-600" />
