@@ -1,0 +1,10 @@
+{
+  "name": "NovaScribe AI Medical Scribe",
+  "description": "A streamlined, zero-friction medical scribing app focusing entirely on the doctor's workflow. Record the consultation, automatically transcribe, and get a structured, editable AI clinical report in under 30 seconds.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,23 @@
+# Render deployment for the CareScribe backend API (Express + Whisper + OpenAI + MongoDB).
+# Render injects PORT automatically; the server reads process.env.PORT.
+services:
+  - type: web
+    name: carescribe-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Secrets — set these in the Render dashboard (sync:false = not stored in repo).
+      - key: MONGODB_URI
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: WHISPER_API_KEY
+        sync: false
+      # Optional: set to your Vercel domain to restrict CORS, e.g. https://carescribe.vercel.app
+      - key: CORS_ORIGIN
+        sync: false
