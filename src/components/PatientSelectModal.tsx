@@ -56,7 +56,7 @@ export default function PatientSelectModal({ patients, onSelect, onAdd, onClose 
                   placeholder="Search by name..." 
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-slate-900"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-900"
                 />
               </div>
             </div>
@@ -66,13 +66,13 @@ export default function PatientSelectModal({ patients, onSelect, onAdd, onClose 
                 <div 
                   key={p.id}
                   onClick={() => onSelect(p)}
-                  className="p-4 bg-white border border-slate-200 hover:border-blue-300 hover:shadow-sm rounded-xl cursor-pointer transition-all flex justify-between items-center group"
+                  className="p-4 bg-white border border-slate-200 hover:border-brand-300 hover:shadow-sm rounded-xl cursor-pointer transition-all flex justify-between items-center group"
                 >
                   <div>
                     <div className="font-semibold text-slate-900">{p.name}</div>
                     <div className="text-sm text-slate-500 mt-0.5">{p.age} yrs • {p.gender}</div>
                   </div>
-                  <div className="text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="text-brand-600 bg-brand-50 px-3 py-1.5 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                     Select
                   </div>
                 </div>
@@ -80,7 +80,7 @@ export default function PatientSelectModal({ patients, onSelect, onAdd, onClose 
               
               <div 
                 onClick={() => setIsAdding(true)}
-                className="p-4 mt-2 border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-2 text-blue-600 font-medium"
+                className="p-4 mt-2 border-2 border-dashed border-slate-200 hover:border-brand-400 hover:bg-brand-50 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-2 text-brand-600 font-medium"
               >
                 <UserPlus size={18} />
                 <span>Add New Patient</span>
@@ -94,7 +94,7 @@ export default function PatientSelectModal({ patients, onSelect, onAdd, onClose 
               <input 
                 type="text" required autoFocus
                 value={newName} onChange={e => setNewName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -103,14 +103,14 @@ export default function PatientSelectModal({ patients, onSelect, onAdd, onClose 
                 <input 
                   type="number" required min="0" max="150"
                   value={newAge} onChange={e => setNewAge(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Gender</label>
                 <select 
                   value={newGender} onChange={e => setNewGender(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -123,7 +123,7 @@ export default function PatientSelectModal({ patients, onSelect, onAdd, onClose 
               <input 
                 type="tel"
                 value={newPhone} onChange={e => setNewPhone(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
               />
             </div>
             <div className="pt-4 flex gap-3">
@@ -135,7 +135,7 @@ export default function PatientSelectModal({ patients, onSelect, onAdd, onClose 
               </button>
               <button 
                 type="submit"
-                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors shadow-sm"
               >
                 Save & Continue
               </button>

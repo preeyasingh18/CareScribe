@@ -12,22 +12,27 @@ export interface WithId {
  * (not Mongo's ObjectId), so a single repository implementation serves them
  * all. API responses hide Mongo internals (`_id`) to keep shapes identical
  * to what the frontend expects.
+ *
+ * Every method takes the signed-in `doctorId` and folds it into the query, so a
+ * doctor can only ever read or overwrite their own records. The scoping lives
+ * here rather than in the routes so a new endpoint cannot forget it: there is no
+ * unscoped read available to call.
  */
 export function createRepository<T extends WithId = WithId>(model: Model<any>) {
   return {
-    /** Return every document, newest first, without Mongo internal fields. */
-    async findAll(): Promise<T[]> {
+    /** Return the doctor's documents, newest first, without Mongo internals. */
+    async findAll(doctorId: string): Promise<T[]> {
       const docs = await model
-        .find({}, { _id: 0, __v: 0 })
+        .find({ doctorId }, { _id: 0, __v: 0 })
         .sort({ updatedAt: -1, createdAt: -1 })
         .lean()
         .exec();
       return docs as unknown as T[];
     },
 
-    /** Return a single document by its app `id`, or null. */
-    async findById(id: string): Promise<T | null> {
-      const doc = await model.findOne({ id }, { _id: 0, __v: 0 }).lean().exec();
+    /** Return one of the doctor's documents by its app `id`, or null. */
+    async findById(doctorId: string, id: string): Promise<T | null> {
+      const doc = await model.findOne({ doctorId, id }, { _id: 0, __v: 0 }).lean().exec();
       return (doc as unknown as T) ?? null;
     },
 
@@ -37,10 +42,15 @@ export function createRepository<T extends WithId = WithId>(model: Model<any>) {
      * patient-history endpoint relies on for chronological ordering).
      */
     async findBy(
+      doctorId: string,
       filter: Record<string, unknown>,
       sort: Record<string, 1 | -1> = { createdAt: 1, updatedAt: 1 },
     ): Promise<T[]> {
-      const docs = await model.find(filter, { _id: 0, __v: 0 }).sort(sort).lean().exec();
+      const docs = await model
+        .find({ ...filter, doctorId }, { _id: 0, __v: 0 })
+        .sort(sort)
+        .lean()
+        .exec();
       return docs as unknown as T[];
     },
 
@@ -48,11 +58,16 @@ export function createRepository<T extends WithId = WithId>(model: Model<any>) {
      * Insert or update a document by `id`.
      * `replace` overwrites the whole document; otherwise fields are merged.
      */
-    async upsert(doc: T, replace = false): Promise<void> {
+    async upsert(doctorId: string, doc: T, replace = false): Promise<void> {
+      // doctorId is stamped from the session, never from the request body, so a
+      // crafted payload cannot write into another doctor's records.
+      const { doctorId: _ignored, ...rest } = doc as T & { doctorId?: unknown };
+      const owned = { ...rest, doctorId } as unknown as T;
+
       if (replace) {
-        await model.replaceOne({ id: doc.id }, doc, { upsert: true }).exec();
+        await model.replaceOne({ doctorId, id: doc.id }, owned, { upsert: true }).exec();
       } else {
-        await model.updateOne({ id: doc.id }, { $set: doc }, { upsert: true }).exec();
+        await model.updateOne({ doctorId, id: doc.id }, { $set: owned }, { upsert: true }).exec();
       }
     },
 
@@ -62,8 +77,8 @@ export function createRepository<T extends WithId = WithId>(model: Model<any>) {
      * cached collection-metadata value can lag behind recent deletes and report
      * stale totals.
      */
-    async count(): Promise<number> {
-      return model.countDocuments({}).exec();
+    async count(doctorId: string): Promise<number> {
+      return model.countDocuments({ doctorId }).exec();
     },
   };
 }

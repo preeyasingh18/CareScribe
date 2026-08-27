@@ -29,6 +29,15 @@ async function errorMessage(res: Response, fallback: string): Promise<string> {
 // fetch with an abort-based timeout. Network-level failures (backend down, dropped
 // socket, DNS/CORS) surface in the browser as a bare TypeError "Failed to fetch";
 // we translate those into a clear, actionable message instead.
+// Called when the server rejects a request as unauthenticated, so the app can
+// clear its session state and send the doctor back to the login screen. Set by
+// AuthProvider; a no-op until then.
+let onUnauthorized: () => void = () => {};
+
+export function setUnauthorizedHandler(handler: () => void): void {
+  onUnauthorized = handler;
+}
+
 async function fetchWithTimeout(
   url: string,
   init: RequestInit,
@@ -37,7 +46,16 @@ async function fetchWithTimeout(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    const res = await fetch(url, {
+      ...init,
+      // Sends the httpOnly session cookie, cross-origin included.
+      credentials: 'include',
+      signal: controller.signal,
+    });
+    // An expired or revoked session should surface as "signed out", not as a
+    // broken page. /api/auth/* is exempt: a failed login is not a lost session.
+    if (res.status === 401 && !url.includes('/auth/')) onUnauthorized();
+    return res;
   } catch (err: any) {
     if (err?.name === 'AbortError') {
       throw new Error('The request timed out. Please check your connection and try again.');
@@ -48,6 +66,58 @@ async function fetchWithTimeout(
   } finally {
     clearTimeout(timer);
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Authentication
+//
+// The session itself is an httpOnly cookie set by the server — it is never
+// visible to this code. These calls only ever move a doctor's public profile
+// (id / name / email / specialization) across the wire; passwords go up once,
+// over the same TLS connection as everything else, and are never stored here.
+// ─────────────────────────────────────────────────────────────
+
+export interface Doctor {
+  id: string;
+  name: string;
+  email: string;
+  specialization: string;
+}
+
+async function authRequest(path: string, body?: unknown): Promise<Doctor | null> {
+  const res = await fetchWithTimeout(
+    `${BASE}/auth/${path}`,
+    {
+      method: body === undefined ? 'GET' : 'POST',
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    },
+    20000,
+  );
+
+  if (!res.ok) {
+    throw new Error(await errorMessage(res, 'Something went wrong. Please try again.'));
+  }
+
+  const data = await res.json();
+  return (data?.doctor as Doctor) ?? null;
+}
+
+/** Restore the session on boot. Returns null when signed out. */
+export const fetchCurrentDoctor = (): Promise<Doctor | null> => authRequest('me');
+
+export const signUpDoctor = (input: {
+  name: string;
+  email: string;
+  password: string;
+  specialization: string;
+}): Promise<Doctor | null> => authRequest('signup', input);
+
+export const logInDoctor = (email: string, password: string): Promise<Doctor | null> =>
+  authRequest('login', { email, password });
+
+export async function logOutDoctor(): Promise<void> {
+  await fetchWithTimeout(`${BASE}/auth/logout`, { method: 'POST' }, 15000);
 }
 
 export async function transcribeAudio(

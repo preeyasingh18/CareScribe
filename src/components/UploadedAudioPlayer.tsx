@@ -115,9 +115,9 @@ export default function UploadedAudioPlayer({ src, onRemove }: Props) {
 
   return (
     <div className="mb-4 flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
-      {/* Left: blue icon + label */}
+      {/* Left: brand icon + label */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <FileText size={16} className="text-blue-600" />
+        <FileText size={16} className="text-brand-600" />
         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide hidden sm:inline">Uploaded audio</span>
       </div>
 
@@ -212,7 +212,7 @@ export default function UploadedAudioPlayer({ src, onRemove }: Props) {
                     className="w-full flex items-center justify-between px-3 py-1.5 pl-10 text-sm text-slate-600 hover:bg-slate-100 transition-colors"
                   >
                     {s === 1 ? 'Normal' : `${s}x`}
-                    {rate === s && <Check size={14} className="text-blue-600" />}
+                    {rate === s && <Check size={14} className="text-brand-600" />}
                   </button>
                 ))}
               </div>

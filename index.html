@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="mask-icon" href="/logo-mark.svg" color="#7c3aed" />
+    <!-- The intro paints this within the first frames; preloading it stops
+         the animation from starting on an empty box. -->
+    <link rel="preload" as="image" href="/logo-mark.svg" fetchpriority="high" />
+    <meta name="theme-color" content="#7c3aed" />
+    <meta
+      name="description"
+      content="CareScribe AI — listens, transcribes, cares. Turn a spoken consultation into a structured, editable clinical report."
+    />
     <title>CareScribe AI</title>
   </head>
   <body>
@@ -11,4 +20,3 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

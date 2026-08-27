@@ -119,14 +119,16 @@ const visitTimeOf = (c: any): string =>
  * history for one patient. Pass `order: 'desc'` to reverse it.
  */
 export async function buildPatientHistory(
+  doctorId: string,
   patientId: string,
   order: 'asc' | 'desc' = 'asc',
 ): Promise<ConsultationHistoryItem[]> {
-  // Pull everything for this patient in parallel from the existing collections.
+  // Pull everything for this patient in parallel, scoped to the signed-in
+  // doctor so one clinician can never read another's history.
   const [consultations, reports, transcripts] = await Promise.all([
-    consultationsRepo.findBy({ patientId }),
-    reportsRepo.findBy({ patientId }),
-    transcriptsRepo.findBy({ patientId }),
+    consultationsRepo.findBy(doctorId, { patientId }),
+    reportsRepo.findBy(doctorId, { patientId }),
+    transcriptsRepo.findBy(doctorId, { patientId }),
   ]);
 
   // Index report/transcript records by the keys we link on (id and the explicit

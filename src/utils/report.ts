@@ -442,18 +442,18 @@ export function buildReportHtml(report: ReportData, meta: ReportMeta = {}): stri
   @page { size: A4; margin: 16mm 14mm; }
   * { box-sizing: border-box; }
   body { font-family: Arial, Helvetica, sans-serif; color: #1e293b; font-size: 12px; line-height: 1.5; background: #fff; margin: 0; }
-  .header { text-align: center; border-bottom: 2px solid #1d4ed8; padding-bottom: 10px; margin-bottom: 16px; }
+  .header { text-align: center; border-bottom: 2px solid #6d28d9; padding-bottom: 10px; margin-bottom: 16px; }
   h1 { font-size: 19px; margin: 0 0 3px; letter-spacing: 0.5px; color: #0f172a; }
-  .brand { color: #1d4ed8; font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  .brand { color: #6d28d9; font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
   .sub { color: #475569; font-size: 11.5px; margin-top: 4px; }
   section { margin-bottom: 13px; page-break-inside: avoid; }
-  h2 { font-size: 12.5px; font-weight: 700; color: #1d4ed8; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 3px; margin: 0 0 7px; text-transform: uppercase; letter-spacing: 0.3px; }
+  h2 { font-size: 12.5px; font-weight: 700; color: #6d28d9; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 3px; margin: 0 0 7px; text-transform: uppercase; letter-spacing: 0.3px; }
   ul { margin: 0; padding-left: 18px; }
   li { padding: 1px 0; }
   .overview { margin: 0; text-align: justify; }
   table { width: 100%; border-collapse: collapse; margin-top: 2px; }
   th, td { border: 1px solid #cbd5e1; padding: 5px 7px; text-align: left; vertical-align: top; font-size: 10.5px; }
-  thead th { background: #eff6ff; font-weight: 700; letter-spacing: 0.2px; color: #1e3a8a; }
+  thead th { background: #f5f3ff; font-weight: 700; letter-spacing: 0.2px; color: #4c1d95; }
   table.kv { width: auto; }
   table.kv th { background: #f8fafc; width: 160px; white-space: nowrap; }
   .group { margin-bottom: 6px; }

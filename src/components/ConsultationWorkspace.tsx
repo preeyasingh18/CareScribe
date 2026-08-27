@@ -1296,8 +1296,8 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
     <button
       key={s.id}
       onClick={() => onSelectSession?.(s)}
-      className={`w-full text-left p-3 border rounded-xl hover:border-blue-300 hover:bg-white cursor-pointer transition-colors ${
-        highlighted ? 'border-blue-400 bg-blue-50/60 ring-2 ring-blue-300' : 'border-slate-200 bg-slate-50'
+      className={`w-full text-left p-3 border rounded-xl hover:border-brand-300 hover:bg-white cursor-pointer transition-colors ${
+        highlighted ? 'border-brand-400 bg-brand-50/60 ring-2 ring-brand-300' : 'border-slate-200 bg-slate-50'
       }`}
       title="Open this session"
     >
@@ -1315,7 +1315,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
 
   // ── Premium report section renderers ────────────────────────
   const inputCls =
-    'w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all';
+    'w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all';
   const fieldLabelCls = 'text-[10px] font-semibold uppercase tracking-wide text-slate-400';
   const cell = (r: Record<string, any>, key: string): string =>
     (typeof r[key] === 'string' && r[key]) || (key === 'dose' ? (r.dosage as string) || '' : '');
@@ -1325,7 +1325,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
     <ul className="space-y-1">
       {items.filter(Boolean).map((it, i) => (
         <li key={i} className="flex gap-2 text-sm text-slate-700">
-          <span className="text-blue-400 leading-none mt-1.5">•</span>
+          <span className="text-brand-400 leading-none mt-1.5">•</span>
           <span className="flex-1">{it}</span>
         </li>
       ))}
@@ -1408,7 +1408,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
         ))}
         <button
           onClick={() => addMed(section.key)}
-          className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors"
         >
           <Plus size={14} /> Add medicine
         </button>
@@ -1429,7 +1429,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
               value={item}
               onChange={e => updateBullet(section.key, i, e.target.value)}
               placeholder="—"
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
             />
             <button
               onClick={() => removeBullet(section.key, i)}
@@ -1442,7 +1442,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
         ))}
         <button
           onClick={() => addBullet(section.key)}
-          className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors mt-1"
+          className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors mt-1"
         >
           <Plus size={14} /> Add item
         </button>
@@ -1547,7 +1547,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
         : tone === 'warn'
           ? 'bg-amber-50 text-amber-700'
           : tone === 'info'
-            ? 'bg-blue-50 text-blue-700'
+            ? 'bg-brand-50 text-brand-700'
             : 'bg-slate-100 text-slate-600';
     return (
       <div>
@@ -1578,13 +1578,13 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
       : label === 'Needs attention'
         ? 'bg-amber-50 text-amber-700'
         : label === 'Mixed'
-          ? 'bg-blue-50 text-blue-700'
+          ? 'bg-brand-50 text-brand-700'
           : 'bg-slate-100 text-slate-600';
 
   const renderCompareCard = () => (
     <div className="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-slate-50/60">
-        <Activity size={16} className="text-blue-600" />
+        <Activity size={16} className="text-brand-600" />
         <h4 className="text-sm font-bold text-slate-900">Compare Previous Visit</h4>
         {previousVisit && (
           <span className="text-xs font-normal text-slate-400">• vs {previousVisit.date}</span>
@@ -1695,7 +1695,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
       <div className="w-64 sm:w-80 border-r border-slate-200 bg-white flex flex-col hidden md:flex">
         <div className="p-4 border-b border-slate-100">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold flex-shrink-0">
+            <div className="w-10 h-10 bg-brand-100 text-brand-700 rounded-full flex items-center justify-center font-bold flex-shrink-0">
               {consultation.patientName.charAt(0)}
             </div>
             <div className="min-w-0">
@@ -1705,7 +1705,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
           </div>
           <button
             onClick={() => onNewSession?.()}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white px-3 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center justify-center gap-2"
             title="Start a new session for this patient"
           >
             <Plus size={16} /> New Session
@@ -1721,7 +1721,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
               value={sessionQuery}
               onChange={e => setSessionQuery(e.target.value)}
               placeholder="Search sessions..."
-              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
             />
           </div>
         </div>
@@ -1730,7 +1730,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
           {/* Current session — always shown at the top, highlighted. */}
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 px-1">Current session</p>
-            <div className="p-3 border-2 border-blue-500 bg-blue-50/50 rounded-xl">
+            <div className="p-3 border-2 border-brand-500 bg-brand-50/50 rounded-xl">
               <div className="flex justify-between items-center mb-1.5">
                 <span className="text-xs font-semibold text-slate-600 flex items-center gap-1">
                   <Clock size={12} /> {consultation.date}
@@ -1784,8 +1784,8 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
              {/* Live transcript auto-save feedback (shown during the consultation). */}
              {(isRecording || transcriptSaveStatus === 'saving' || transcriptSaveStatus === 'failed') && transcriptSaveStatus !== 'idle' && (
                transcriptSaveStatus === 'saving' ? (
-                 <span className="text-xs font-semibold text-blue-600 flex items-center gap-1.5">
-                   <span className="w-3 h-3 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></span>
+                 <span className="text-xs font-semibold text-brand-600 flex items-center gap-1.5">
+                   <span className="w-3 h-3 border-2 border-brand-200 border-t-brand-600 rounded-full animate-spin"></span>
                    Saving transcript…
                  </span>
                ) : transcriptSaveStatus === 'saved' ? (
@@ -1812,8 +1812,8 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
                 </span>
               )
             ) : isTranscribing ? (
-              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase tracking-widest flex items-center gap-1.5">
-                <span className="w-3 h-3 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></span>
+              <span className="text-xs font-bold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-md uppercase tracking-widest flex items-center gap-1.5">
+                <span className="w-3 h-3 border-2 border-brand-200 border-t-brand-600 rounded-full animate-spin"></span>
                 Transcribing
               </span>
             ) : (
@@ -1827,7 +1827,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
                   onClick={handleGenerateReport}
                   disabled={!canGenerate}
                   title="Generate report from the transcript"
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
+                  className="bg-brand-600 hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
                 >
                   <FileText size={16} />
                   {isGenerating ? 'Generating report...' : 'Generate Report'}
@@ -1856,7 +1856,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
           {(isUploading || (uploadFileName && uploadSuccess)) && (
             <div className="mb-4 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
               <div className="flex items-center gap-3">
-                <Upload size={18} className={`flex-shrink-0 ${isUploading ? 'text-blue-600' : 'text-emerald-600'}`} />
+                <Upload size={18} className={`flex-shrink-0 ${isUploading ? 'text-brand-600' : 'text-emerald-600'}`} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-800 truncate">{uploadFileName}</p>
                   {isUploading ? (
@@ -1881,7 +1881,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
               {isUploading && (
                 <div className="mt-2 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-600 transition-all duration-200"
+                    className="h-full bg-brand-600 transition-all duration-200"
                     style={{ width: `${uploadProgress < 100 ? uploadProgress : 100}%` }}
                   />
                 </div>
@@ -1901,13 +1901,13 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
           {/* Transcript heading + language selector + review note */}
           <div className="flex items-center justify-between gap-3 mb-1">
             <h2 className="font-bold text-slate-900 flex items-center gap-2">
-              <FileText size={18} className="text-blue-600" />
+              <FileText size={18} className="text-brand-600" />
               Transcript
             </h2>
             <div className="flex items-center gap-3">
               {isTranslating && (
-                <span className="text-xs font-semibold text-blue-600 flex items-center gap-1.5">
-                  <span className="w-3 h-3 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></span>
+                <span className="text-xs font-semibold text-brand-600 flex items-center gap-1.5">
+                  <span className="w-3 h-3 border-2 border-brand-200 border-t-brand-600 rounded-full animate-spin"></span>
                   Translating transcript...
                 </span>
               )}
@@ -1918,7 +1918,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
                   onChange={(e) => handleLanguageChange(e.target.value)}
                   disabled={isRecording || isTranscribing || isTranslating || isGenerating}
                   title="Output language for the transcript. Auto Detect keeps the spoken language; selecting a language converts the entire transcript into that language and script. Applies to recordings and uploaded audio."
-                  className="bg-white border border-slate-300 rounded-md px-2 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-white border border-slate-300 rounded-md px-2 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {LANGUAGES.map(l => (
                     <option key={l.code} value={l.code}>{l.label}</option>
@@ -1941,7 +1941,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
               onChange={(e) => setDisplayedTranscript(e.target.value)}
               readOnly={isRecording && !isPaused}
               placeholder={isRecording ? (liveSupported ? 'Listening… your words appear here as you speak.' : 'Listening… the transcript will appear after you stop recording.') : 'Transcript will appear here. You can edit it before generating the report.'}
-              className="flex-1 w-full bg-white border border-slate-200 rounded-2xl p-5 text-[15px] leading-relaxed text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none custom-scrollbar mb-24"
+              className="flex-1 w-full bg-white border border-slate-200 rounded-2xl p-5 text-[15px] leading-relaxed text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all resize-none custom-scrollbar mb-24"
             />
           )}
         </div>
@@ -1983,7 +1983,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
           <button
             onClick={triggerFilePicker}
             disabled={isRecording || isTranscribing || isTranslating || isGenerating || isUploading}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-full text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
+            className="bg-brand-600 hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-full text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
             title="Upload an audio file (mp3, wav, m4a, webm, ogg — max 25MB) to this session"
           >
             <Upload size={18} />
@@ -2007,12 +2007,12 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
             {/* Mobile-only CareScribe logo — returns to the dashboard */}
             <Logo onClick={() => onExit?.()} className="md:hidden" />
             <h3 className="hidden md:flex font-bold text-slate-900 items-center gap-2">
-              <FileText size={18} className="text-blue-600" />
+              <FileText size={18} className="text-brand-600" />
               Report Editor
             </h3>
             <div className="flex gap-2 items-center">
               {isGenerating && (
-                <span className="hidden md:inline-block text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md">Generating report...</span>
+                <span className="hidden md:inline-block text-xs font-semibold text-brand-700 bg-brand-50 px-2.5 py-1 rounded-md">Generating report...</span>
               )}
               {!isGenerating && reportStatus === 'generated' && (
                 <span className="hidden md:flex text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md items-center gap-1">
@@ -2086,7 +2086,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
               <button
                 type="button"
                 onClick={handleSave}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
+                className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-md text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
               >
                 <CheckCircle size={16} /> Save
               </button>
@@ -2103,7 +2103,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
               {visibleSections.map((section, idx) => (
                 <div key={section.key as string}>
                   <div className="flex items-center justify-between gap-2 mb-2 border-b border-slate-100 pb-1">
-                    <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wide">
+                    <h4 className="text-xs font-bold text-brand-700 uppercase tracking-wide">
                       {idx + 1}. {section.title}
                     </h4>
                     <span
@@ -2120,7 +2120,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
 
               {/* Doctor Final Review */}
               <div>
-                <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wide border-b border-slate-100 pb-1 mb-2">
+                <h4 className="text-xs font-bold text-brand-700 uppercase tracking-wide border-b border-slate-100 pb-1 mb-2">
                   {visibleSections.length + 1}. Doctor Final Review
                 </h4>
                 <label className="flex flex-col gap-0.5 mb-3">
@@ -2136,7 +2136,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
                   <button
                     type="button"
                     onClick={handleSave}
-                    className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors"
+                    className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors"
                   >
                     <CheckCircle size={14} /> Save Report
                   </button>
@@ -2160,7 +2160,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
 
             {isGenerating && (
               <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-center">
-                <div className="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+                <div className="w-12 h-12 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin mb-4"></div>
                 <h3 className="font-bold text-lg text-slate-900 mb-1">Generating report...</h3>
                 <p className="text-sm text-slate-600">Creating the clinical report from the edited transcript</p>
               </div>

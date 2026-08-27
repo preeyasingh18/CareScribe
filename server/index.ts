@@ -1,10 +1,25 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { connectDB, isConnected } from './db';
+import {
+  requireAuth,
+  issueSession,
+  clearSession,
+  doctorFromRequest,
+  hashPassword,
+  verifyPassword,
+  validateSignup,
+  authConfigured,
+  isDatabaseUnavailable,
+  DB_UNAVAILABLE_MESSAGE,
+  type AuthedRequest,
+} from './auth';
+import { Doctor, toPublic, type DoctorDoc } from './models/Doctor';
 import {
   patientsRepo,
   consultationsRepo,
@@ -34,8 +49,17 @@ fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 // CORS — allow all origins by default; restrict via CORS_ORIGIN (comma-separated)
 // in production if you want to lock it down to your Vercel domain.
 const corsOrigins = (process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
-app.use(cors(corsOrigins.length ? { origin: corsOrigins } : {}));
+// `credentials: true` is required for the httpOnly session cookie to be sent
+// cross-site. It is incompatible with a wildcard origin, so when CORS_ORIGIN is
+// unset we reflect the caller's origin (`origin: true`) instead of '*'.
+app.use(
+  cors({
+    origin: corsOrigins.length ? corsOrigins : true,
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: '50mb' }));
+app.use(cookieParser());
 
 // Serve persisted upload audio. Registered before the /api 404 handler so
 // GET /api/uploads/<file> resolves to a real file on disk. Upload filenames are
@@ -62,7 +86,7 @@ app.use('/api', (_req, res, next) => {
 // Delete a persisted upload audio file (used by "Remove audio" in a session).
 // Best-effort: a missing file is treated as already removed (200), so the client
 // flow never breaks if the file is already gone.
-app.delete('/api/uploads/:filename', (req, res) => {
+app.delete('/api/uploads/:filename', requireAuth, (req, res) => {
   // Strip any path parts so the request can only target a file inside UPLOADS_DIR.
   const safeName = path.basename(req.params.filename || '');
   if (!safeName) return res.status(400).json({ error: 'Invalid file name' });
@@ -153,7 +177,7 @@ function checkAudioFile(originalName?: string, mimetype?: string): { accepted: b
 // ─────────────────────────────────────────────────────────────
 // Transcription (OpenAI Whisper) — exact spoken text, no fallback
 // ─────────────────────────────────────────────────────────────
-app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
+app.post('/api/transcribe', requireAuth, upload.single('audio'), async (req, res) => {
   try {
     if (!req.file) {
       console.error('[transcribe] rejected: no audio file provided');
@@ -226,7 +250,7 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 // Transcript Translation
 // ─────────────────────────────────────────────────────────────
-app.post('/api/translate-transcript', async (req, res) => {
+app.post('/api/translate-transcript', requireAuth, async (req, res) => {
   try {
     const { text, targetLanguage } = req.body ?? {};
 
@@ -248,7 +272,7 @@ app.post('/api/translate-transcript', async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 // Report Generation (OpenAI)
 // ─────────────────────────────────────────────────────────────
-app.post('/api/generate-report', async (req, res) => {
+app.post('/api/generate-report', requireAuth, async (req, res) => {
   try {
     const { transcript } = req.body;
 
@@ -288,25 +312,132 @@ app.post('/api/generate-report', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// Authentication
+//
+// Sessions are signed JWTs delivered as httpOnly cookies (see auth.ts). The
+// browser never handles a token or a password hash; every clinical route below
+// is gated by requireAuth, so the server — not the UI — decides who may read
+// what.
+// ─────────────────────────────────────────────────────────────
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    if (!authConfigured()) {
+      return res.status(500).json({ error: 'Server auth is not configured (JWT_SECRET missing).' });
+    }
+
+    const parsed = validateSignup(req.body ?? {});
+    if (parsed.error || !parsed.value) {
+      return res.status(400).json({ error: parsed.error || 'Invalid details.' });
+    }
+    const { name, email, password, specialization } = parsed.value;
+
+    await connectDB();
+    if (await Doctor.exists({ email })) {
+      return res.status(409).json({ error: 'An account with this email already exists.' });
+    }
+
+    const doctor = {
+      id: crypto.randomUUID(),
+      name,
+      email,
+      specialization,
+      passwordHash: await hashPassword(password),
+    };
+    await Doctor.create(doctor);
+
+    const publicDoctor = toPublic(doctor as DoctorDoc);
+    issueSession(res, publicDoctor);
+    return res.status(201).json({ doctor: publicDoctor });
+  } catch (error: any) {
+    // A racing duplicate slips past the exists() check and lands here.
+    if (error?.code === 11000) {
+      return res.status(409).json({ error: 'An account with this email already exists.' });
+    }
+    if (isDatabaseUnavailable(error)) {
+      console.error('[auth:signup] database unavailable');
+      return res.status(503).json({ error: DB_UNAVAILABLE_MESSAGE });
+    }
+    console.error('[auth:signup]', error);
+    return res.status(500).json({ error: 'Could not create the account.' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    if (!authConfigured()) {
+      return res.status(500).json({ error: 'Server auth is not configured (JWT_SECRET missing).' });
+    }
+
+    const email = String(req.body?.email ?? '').trim().toLowerCase();
+    const password = String(req.body?.password ?? '');
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Enter your email and password.' });
+    }
+
+    await connectDB();
+    const doc = (await Doctor.findOne({ email }).lean().exec()) as DoctorDoc | null;
+
+    // One message for "no such account" and "wrong password" so the form cannot
+    // be used to discover which emails are registered.
+    const rejection = { error: 'Those credentials do not match an account.' };
+    if (!doc) {
+      // Spend comparable time on a miss so response timing does not leak either.
+      await verifyPassword(password, '$2a$12$dummysaltdummysaltdummysaltdummysaltdummysaltdu');
+      return res.status(401).json(rejection);
+    }
+    if (!(await verifyPassword(password, doc.passwordHash))) {
+      return res.status(401).json(rejection);
+    }
+
+    const publicDoctor = toPublic(doc);
+    issueSession(res, publicDoctor);
+    return res.json({ doctor: publicDoctor });
+  } catch (error) {
+    if (isDatabaseUnavailable(error)) {
+      console.error('[auth:login] database unavailable');
+      return res.status(503).json({ error: DB_UNAVAILABLE_MESSAGE });
+    }
+    console.error('[auth:login]', error);
+    return res.status(500).json({ error: 'Could not sign you in.' });
+  }
+});
+
+app.post('/api/auth/logout', (_req, res) => {
+  clearSession(res);
+  return res.json({ success: true });
+});
+
+// The browser calls this on boot to restore a session. 200 with doctor: null
+// (rather than 401) so "signed out" is an ordinary answer, not a console error.
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    return res.json({ doctor: await doctorFromRequest(req) });
+  } catch (error) {
+    console.error('[auth:me]', error);
+    return res.json({ doctor: null });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // Patients
 // ─────────────────────────────────────────────────────────────
-app.get('/api/patients', async (_req, res) => {
+app.get('/api/patients', requireAuth, async (req: AuthedRequest, res) => {
   try {
-    return res.json(await patientsRepo.findAll());
+    return res.json(await patientsRepo.findAll(req.doctor!.id));
   } catch (error) {
     console.error('[patients]', error);
     return res.json([]);
   }
 });
 
-app.post('/api/patients', async (req, res) => {
+app.post('/api/patients', requireAuth, async (req: AuthedRequest, res) => {
   try {
     const patient = req.body;
     if (!patient?.id) {
       return res.status(400).json({ error: 'patient.id is required' });
     }
     // Patients are stored as a full record (replace).
-    await patientsRepo.upsert(patient, true);
+    await patientsRepo.upsert(req.doctor!.id, patient, true);
     return res.json({ success: true });
   } catch (error) {
     console.error('[save-patient]', error);
@@ -318,7 +449,7 @@ app.post('/api/patients', async (req, res) => {
 // consultations (with their linked reports/prescriptions/transcripts). Creates
 // nothing; see services/patientHistory.ts for the linking model.
 // Pass ?order=desc to reverse the default oldest → newest ordering.
-app.get('/api/patients/:patientId/history', async (req, res) => {
+app.get('/api/patients/:patientId/history', requireAuth, async (req: AuthedRequest, res) => {
   try {
     const { patientId } = req.params;
     if (!patientId) {
@@ -326,7 +457,7 @@ app.get('/api/patients/:patientId/history', async (req, res) => {
     }
     const order = req.query.order === 'desc' ? 'desc' : 'asc';
     const { buildPatientHistory } = await import('./services/patientHistory');
-    const history = await buildPatientHistory(patientId, order);
+    const history = await buildPatientHistory(req.doctor!.id, patientId, order);
     return res.json(history);
   } catch (error) {
     console.error('[patient-history]', error);
@@ -337,23 +468,23 @@ app.get('/api/patients/:patientId/history', async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 // Consultations
 // ─────────────────────────────────────────────────────────────
-app.get('/api/consultations', async (_req, res) => {
+app.get('/api/consultations', requireAuth, async (req: AuthedRequest, res) => {
   try {
-    return res.json(await consultationsRepo.findAll());
+    return res.json(await consultationsRepo.findAll(req.doctor!.id));
   } catch (error) {
     console.error('[consultations]', error);
     return res.json([]);
   }
 });
 
-app.post('/api/save-consultation', async (req, res) => {
+app.post('/api/save-consultation', requireAuth, async (req: AuthedRequest, res) => {
   try {
     const consultation = req.body;
     if (!consultation?.id) {
       return res.status(400).json({ error: 'consultation.id is required' });
     }
     // Merge so partial updates (e.g. adding a report later) don't wipe fields.
-    await consultationsRepo.upsert(consultation);
+    await consultationsRepo.upsert(req.doctor!.id, consultation);
     return res.json({ success: true });
   } catch (error) {
     console.error('[save-consultation]', error);
@@ -365,22 +496,22 @@ app.post('/api/save-consultation', async (req, res) => {
 // Generic collections: reports, prescriptions, transcripts
 // ─────────────────────────────────────────────────────────────
 function registerCollection(name: string, repo: typeof reportsRepo) {
-  app.get(`/api/${name}`, async (_req, res) => {
+  app.get(`/api/${name}`, requireAuth, async (req: AuthedRequest, res) => {
     try {
-      return res.json(await repo.findAll());
+      return res.json(await repo.findAll(req.doctor!.id));
     } catch (error) {
       console.error(`[${name}]`, error);
       return res.json([]);
     }
   });
 
-  app.post(`/api/${name}`, async (req, res) => {
+  app.post(`/api/${name}`, requireAuth, async (req: AuthedRequest, res) => {
     try {
       const doc = req.body;
       if (!doc?.id) {
         return res.status(400).json({ error: 'id is required' });
       }
-      await repo.upsert(doc);
+      await repo.upsert(req.doctor!.id, doc);
       return res.json({ success: true });
     } catch (error) {
       console.error(`[save-${name}]`, error);
@@ -396,14 +527,14 @@ registerCollection('transcripts', transcriptsRepo);
 // ─────────────────────────────────────────────────────────────
 // Dashboard stats (all counts come from MongoDB)
 // ─────────────────────────────────────────────────────────────
-app.get('/api/stats', async (_req, res) => {
+app.get('/api/stats', requireAuth, async (req: AuthedRequest, res) => {
   try {
     const [patients, consultations, reports, prescriptions, transcripts] = await Promise.all([
-      patientsRepo.count(),
-      consultationsRepo.count(),
-      reportsRepo.count(),
-      prescriptionsRepo.count(),
-      transcriptsRepo.count(),
+      patientsRepo.count(req.doctor!.id),
+      consultationsRepo.count(req.doctor!.id),
+      reportsRepo.count(req.doctor!.id),
+      prescriptionsRepo.count(req.doctor!.id),
+      transcriptsRepo.count(req.doctor!.id),
     ]);
     return res.json({ patients, consultations, reports, prescriptions, transcripts });
   } catch (error) {
@@ -418,6 +549,7 @@ app.get('/api/stats', async (_req, res) => {
 app.get('/api/config-test', (_req, res) => {
   res.json({
     sarvam: !!(process.env.SARVAM_API_KEY || '').trim(),
+    auth: authConfigured(),
     database: 'mongodb',
   });
 });

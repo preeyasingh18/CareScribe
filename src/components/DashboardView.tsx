@@ -63,9 +63,9 @@ export default function DashboardView({
   const prescriptionsGenerated = prescriptionsCount ?? 0;
 
   const metrics = [
-    { label: 'Total Patients', value: totalPatients, icon: Users, color: 'bg-blue-50 text-blue-600' },
+    { label: 'Total Patients', value: totalPatients, icon: Users, color: 'bg-brand-50 text-brand-600' },
     { label: 'Total Consultations', value: consultations.length, icon: Activity, color: 'bg-indigo-50 text-indigo-600' },
-    { label: 'Reports Generated', value: reportsGenerated, icon: ClipboardList, color: 'bg-purple-50 text-purple-600' },
+    { label: 'Reports Generated', value: reportsGenerated, icon: ClipboardList, color: 'bg-fuchsia-50 text-fuchsia-600' },
     { label: 'Prescriptions Generated', value: prescriptionsGenerated, icon: Pill, color: 'bg-emerald-50 text-emerald-600' },
   ];
 
@@ -79,7 +79,7 @@ export default function DashboardView({
         </div>
         <button 
           onClick={onStartNew}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+          className="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2"
         >
           <Mic size={18} />
           <span>New Consultation</span>
@@ -108,7 +108,7 @@ export default function DashboardView({
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col">
         <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50">
           <h2 className="font-semibold text-lg text-slate-800 flex items-center gap-2">
-            <Clock size={18} className="text-blue-500" />
+            <Clock size={18} className="text-brand-500" />
             Recent Consultations
           </h2>
           <div className="relative w-full sm:w-auto">
@@ -118,7 +118,7 @@ export default function DashboardView({
               placeholder="Search patients..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full sm:w-72 transition-all"
+              className="pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 w-full sm:w-72 transition-all"
             />
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function DashboardView({
                 className="p-5 hover:bg-slate-50 cursor-pointer transition-colors flex items-center justify-between group"
               >
                 <div>
-                  <h3 className="font-semibold text-slate-900 group-hover:text-blue-700 transition-colors text-lg">{con?.patientName || "Unknown Patient"}</h3>
+                  <h3 className="font-semibold text-slate-900 group-hover:text-brand-700 transition-colors text-lg">{con?.patientName || "Unknown Patient"}</h3>
                   <div className="text-sm text-slate-500 mt-1 flex items-center gap-3">
                     <span className="flex items-center gap-1"><Clock size={14} /> {con?.date}</span>
                     <span className="w-1 h-1 rounded-full bg-slate-300"></span>
@@ -146,7 +146,7 @@ export default function DashboardView({
                     </span>
                   </div>
                 </div>
-                <div className="text-slate-300 group-hover:text-blue-600 transition-colors bg-white border border-slate-100 group-hover:border-blue-100 p-2 rounded-lg shadow-sm">
+                <div className="text-slate-300 group-hover:text-brand-600 transition-colors bg-white border border-slate-100 group-hover:border-brand-100 p-2 rounded-lg shadow-sm">
                   <ChevronRight size={20} />
                 </div>
               </div>

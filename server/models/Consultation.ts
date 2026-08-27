@@ -5,7 +5,10 @@ const { Schema, model, models } = mongoose;
 
 const ConsultationSchema = new Schema(
   {
-    id: { type: String, required: true, unique: true, index: true },
+    id: { type: String, required: true, index: true },
+    // Owning clinician (server-stamped from the session). Indexed because every
+    // read is scoped by it.
+    doctorId: { type: String, required: true, index: true },
     patientId: { type: String, default: '' },
     patientName: { type: String, default: 'Unknown Patient' },
     date: { type: String, default: '' },

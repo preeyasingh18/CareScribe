@@ -8,7 +8,7 @@ import {
   PrescriptionRecord,
   TranscriptRecord,
 } from './types';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LogOut } from 'lucide-react';
 // Eagerly loaded shell — the only chunks on the first-paint critical path.
 import Logo from './components/Logo';
 import Sidebar from './components/Sidebar';
@@ -33,6 +33,9 @@ import {
   saveConsultation,
 } from './services/api';
 import { medicationsToText } from './utils/report';
+import { useAuth, initialsFor } from './auth/AuthContext';
+import { navigate, LANDING_PATH } from './routing';
+import { showToast } from './components/Toast';
 
 // Main Views
 type ViewState = 'dashboard' | 'patients' | 'consultations' | 'transcripts' | 'reports' | 'prescriptions' | 'settings';
@@ -119,6 +122,8 @@ const sessionSearchOrder = (items: Consultation[], rawQuery: string): Consultati
 export default function App() {
   // State — initial view is derived from the current URL so deep links / refresh
   // land on the right page.
+  // The signed-in doctor replaces what used to be a hardcoded name in the header.
+  const { doctor, signOut } = useAuth();
   const [activeView, setActiveView] = useState<ViewState>(() => pathToView(window.location.pathname));
   const [patients, setPatients] = useState<Patient[]>([]);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
@@ -235,6 +240,24 @@ export default function App() {
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
+
+  // Sign out clears the server session (httpOnly cookie) and every piece of
+  // doctor-specific state this shell is holding, then returns to the public
+  // site. `replace` keeps /dashboard out of the history entry we came from, and
+  // the route guard bounces any older dashboard entry the Back button reaches.
+  const handleSignOut = async () => {
+    await signOut();
+    setPatients([]);
+    setConsultations([]);
+    setReports([]);
+    setPrescriptions([]);
+    setTranscripts([]);
+    setActiveConsultation(null);
+    setIsPatientModalOpen(false);
+    setIsMobileMenuOpen(false);
+    showToast('Signed out successfully.');
+    navigate(LANDING_PATH, { replace: true });
+  };
 
   // Handlers
   const handleStartNewConsultation = () => {
@@ -461,7 +484,11 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col md:flex-row overflow-hidden">
       {/* SIDEBAR NAVIGATION */}
       {!activeConsultation && (
-        <Sidebar activeView={activeView} onNavigate={(v) => setActiveView(v as ViewState)} />
+        <Sidebar
+          activeView={activeView}
+          onNavigate={(v) => setActiveView(v as ViewState)}
+          onSignOut={handleSignOut}
+        />
       )}
 
       {/* MAIN CONTENT AREA */}
@@ -488,11 +515,23 @@ export default function App() {
             </div>
 
             {!activeConsultation && (
-              <div className="flex items-center gap-4 text-sm font-semibold">
-                <div className="w-8 h-8 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-600 overflow-hidden">
-                  <img src="https://images.unsplash.com/photo-1594824813573-246434de83fb?auto=format&fit=crop&q=80&w=64" alt="Doctor" width={32} height={32} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+              <div className="flex items-center gap-3 text-sm font-semibold">
+                <div className="w-9 h-9 rounded-full bg-brand-100 border border-brand-200 flex items-center justify-center text-brand-700 text-xs font-bold">
+                  {initialsFor(doctor?.name)}
                 </div>
-                <span className="text-slate-700 hidden sm:inline-block">Dr. E. Martinez</span>
+                <div className="hidden sm:block leading-tight text-left">
+                  <div className="text-slate-800">{doctor?.name || 'Doctor'}</div>
+                  <div className="text-xs font-medium text-slate-500">{doctor?.specialization || 'Doctor'}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="ml-1 p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-brand-700 transition-colors"
+                  title="Sign out"
+                  aria-label="Sign out"
+                >
+                  <LogOut size={18} />
+                </button>
               </div>
             )}
           </div>
@@ -512,7 +551,7 @@ export default function App() {
                         setIsMobileMenuOpen(false);
                       }}
                       className={`w-full text-left px-6 py-3 font-medium transition-colors ${
-                        isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-50'
+                        isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
                       {item.label}

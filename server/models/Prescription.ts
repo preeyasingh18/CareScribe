@@ -5,7 +5,10 @@ const { Schema, model, models } = mongoose;
 
 const PrescriptionSchema = new Schema(
   {
-    id: { type: String, required: true, unique: true, index: true },
+    id: { type: String, required: true, index: true },
+    // Owning clinician (server-stamped from the session). Indexed because every
+    // read is scoped by it.
+    doctorId: { type: String, required: true, index: true },
     // Links this prescription back to its consultation (see Report.ts note).
     consultationId: { type: String, default: '', index: true },
     patientId: { type: String, default: '' },

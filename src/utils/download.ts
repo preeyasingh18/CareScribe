@@ -139,7 +139,7 @@ export function downloadReportPdf(report: ReportData, meta: ExportMeta): void {
       head: [head],
       body: body as any,
       styles: { fontSize: 8.5, cellPadding: 3.5, overflow: 'linebreak', valign: 'top' },
-      headStyles: { fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold' },
+      headStyles: { fillColor: [245, 243, 255], textColor: [76, 29, 149], fontStyle: 'bold' },
       theme: 'grid',
     });
     y = (doc as any).lastAutoTable.finalY + 16;
@@ -164,7 +164,7 @@ export function downloadReportPdf(report: ReportData, meta: ExportMeta): void {
   // Title
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.setTextColor(29, 78, 216);
+  doc.setTextColor(109, 40, 217);
   doc.text('CARESCRIBE AI', pageWidth / 2, y, { align: 'center' });
   y += 16;
   doc.setFontSize(17);
@@ -179,7 +179,7 @@ export function downloadReportPdf(report: ReportData, meta: ExportMeta): void {
     doc.text(sub, pageWidth / 2, y, { align: 'center' });
     y += 14;
   }
-  doc.setDrawColor(29, 78, 216);
+  doc.setDrawColor(109, 40, 217);
   doc.setLineWidth(1.2);
   doc.line(marginX, y, pageWidth - marginX, y);
   doc.setLineWidth(0.5);
@@ -193,7 +193,7 @@ export function downloadReportPdf(report: ReportData, meta: ExportMeta): void {
     // Section heading
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11.5);
-    doc.setTextColor(29, 78, 216);
+    doc.setTextColor(109, 40, 217);
     doc.text(`${n}. ${section.title.toUpperCase()}`, marginX, y);
     y += 5;
     doc.setDrawColor(203, 213, 225);
@@ -286,7 +286,7 @@ export async function downloadReportDocx(report: ReportData, meta: ExportMeta): 
   children.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: 'CARESCRIBE AI', bold: true, color: '1D4ED8', size: 20 })],
+      children: [new TextRun({ text: 'CARESCRIBE AI', bold: true, color: '6D28D9', size: 20 })],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
@@ -309,7 +309,7 @@ export async function downloadReportDocx(report: ReportData, meta: ExportMeta): 
     new Paragraph({
       heading: HeadingLevel.HEADING_2,
       spacing: { before: 220, after: 80 },
-      children: [new TextRun({ text, bold: true, color: '1D4ED8', size: 24 })],
+      children: [new TextRun({ text, bold: true, color: '6D28D9', size: 24 })],
     });
 
   const buildTable = (cols: ColumnDef[], rows: Record<string, any>[]) => {

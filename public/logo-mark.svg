@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="9 9 46 46" width="64" height="64" fill="none" role="img" aria-label="CareScribe">
+  <!-- The CareScribe mark: the purple "C" and the microphone, and nothing else.
+       Geometry is byte-identical to <LogoMark variant="compact"/> in
+       src/components/Logo.tsx (and to the shapes inside favicon.svg), so the
+       animated intro, the navbar, the sidebar and the tab icon are all the
+       same drawing. The viewBox is cropped to the artwork's own bounds so the
+       mark fills its box instead of floating inside padding.
+
+       Do not edit the paths here in isolation — they are mirrored in Logo.tsx. -->
+  <defs>
+    <linearGradient id="cs-mark-ring" x1="10" y1="50" x2="48" y2="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4c1d95"/>
+      <stop offset="55%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+
+  <!-- the C -->
+  <path d="M44.23 20.19A17 17 0 1 0 44.23 43.81" stroke="url(#cs-mark-ring)" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- the microphone -->
+  <rect x="28.5" y="20" width="7" height="13" rx="3.5" fill="#7c3aed"/>
+  <g stroke="#2e1065" stroke-width="2.6" stroke-linecap="round">
+    <path d="M25.5 30.5A6.5 6.5 0 0 0 38.5 30.5"/>
+    <path d="M32 37V42"/>
+    <path d="M27 42h10"/>
+  </g>
+</svg>

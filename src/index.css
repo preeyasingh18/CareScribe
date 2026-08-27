@@ -4,6 +4,23 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* ── CareScribe brand ────────────────────────────────────────────────
+     Sampled from the logo: the violet of the "C" ring and the "Scribe"
+     wordmark (600), the light lavender of the document lines (300/400),
+     and the deep indigo of the "Care" wordmark (950).
+     Every accent in the app uses this scale — never a raw blue/purple. */
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+  --color-brand-800: #5b21b6;
+  --color-brand-900: #4c1d95;
+  --color-brand-950: #2e1065;
 }
 
 @layer base {
@@ -24,12 +41,12 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #ddd6fe;
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #a78bfa;
 }
 
 /* Uploaded-audio seek bar: clean uniform grey track with NO visible thumb knob.
@@ -40,7 +57,7 @@
   appearance: none;
   height: 5px;
   border-radius: 9999px;
-  background: #cbd5e1; /* slate-300 fallback before metadata loads */
+  background: #ddd6fe; /* brand-200 fallback before metadata loads */
   cursor: pointer;
 }
 .audio-seek::-webkit-slider-thumb {
@@ -61,4 +78,23 @@
   height: 5px;
   border-radius: 9999px;
   background: transparent;
+}
+/* Background voice waveform (landing page, see landing/WaveBackdrop.tsx).
+   A slow scaleY breath on each bar — transform-only so it stays on the
+   compositor. Bars carry their own duration/negative delay so the row never
+   moves in lockstep. Motion is dropped entirely for prefers-reduced-motion. */
+@keyframes cs-wave {
+  0%,
+  100% {
+    transform: scaleY(0.68);
+  }
+  50% {
+    transform: scaleY(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="cs-wave"] {
+    animation: none !important;
+  }
 }

@@ -128,7 +128,7 @@ export default function PreviousConsultationHistory({
           <button
             type="button"
             onClick={() => setNewestFirst(v => !v)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-blue-700 bg-white border border-slate-200 hover:border-blue-300 rounded-lg px-2.5 py-1.5 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-brand-700 bg-white border border-slate-200 hover:border-brand-300 rounded-lg px-2.5 py-1.5 transition-colors"
             title="Reverse the order"
           >
             <ArrowDownUp size={13} />
@@ -139,7 +139,7 @@ export default function PreviousConsultationHistory({
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-slate-500 py-6 justify-center">
-          <span className="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" />
+          <span className="w-4 h-4 border-2 border-slate-300 border-t-brand-600 rounded-full animate-spin" />
           Loading consultation history…
         </div>
       ) : error ? (
@@ -240,7 +240,7 @@ export default function PreviousConsultationHistory({
                           })
                         }
                         disabled={!item.hasReport}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-2 transition-colors"
+                        className="flex items-center gap-1.5 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-2 transition-colors"
                       >
                         <FileText size={14} /> View Report
                       </button>
@@ -253,7 +253,7 @@ export default function PreviousConsultationHistory({
                           })
                         }
                         disabled={!item.transcriptText}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:border-blue-300 hover:text-blue-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-2 transition-colors"
+                        className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:border-brand-300 hover:text-brand-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-2 transition-colors"
                       >
                         <MessageSquareText size={14} /> View Transcript
                       </button>
@@ -278,7 +278,7 @@ export default function PreviousConsultationHistory({
           >
             <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
               <div className="flex items-center gap-2 font-semibold text-slate-900">
-                <MessageSquareText size={16} className="text-blue-600" /> Transcript
+                <MessageSquareText size={16} className="text-brand-600" /> Transcript
                 <span className="text-xs font-normal text-slate-400">• {transcriptModal.when}</span>
               </div>
               <button
@@ -309,7 +309,7 @@ export default function PreviousConsultationHistory({
           >
             <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
               <div className="flex items-center gap-2 font-semibold text-slate-900">
-                <FileText size={16} className="text-blue-600" /> Report
+                <FileText size={16} className="text-brand-600" /> Report
                 <span className="text-xs font-normal text-slate-400">• {reportModal.when}</span>
               </div>
               <button

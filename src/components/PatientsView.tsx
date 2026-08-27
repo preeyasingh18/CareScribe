@@ -42,7 +42,7 @@ export default function PatientsView({ patients, consultations = [], onOpenConsu
               placeholder="Search patients by name..."
               value={query}
               onChange={e => setQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
             />
           </div>
         </div>
@@ -63,7 +63,7 @@ export default function PatientsView({ patients, consultations = [], onOpenConsu
                     className="p-4 flex items-center justify-between hover:bg-slate-50 cursor-pointer"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold">
+                      <div className="w-10 h-10 bg-brand-100 text-brand-700 rounded-full flex items-center justify-center font-bold">
                         {(p.name || '?').charAt(0)}
                       </div>
                       <div>
