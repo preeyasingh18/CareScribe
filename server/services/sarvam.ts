@@ -32,7 +32,8 @@ export interface ChatMessage {
 }
 
 export interface SarvamChatOptions {
-  // Chat model. sarvam-30b is the default; sarvam-105b is also available.
+  // Chat model. sarvam-105b is the default; sarvam-105b-conversations is also
+  // available. (sarvam-30b was retired by Sarvam and now returns an API error.)
   model?: string;
   // Upper bound on generated tokens. Sarvam's starter tier caps this at 4096,
   // and the reasoning trace shares this budget, so we default just under the cap.
@@ -62,7 +63,7 @@ export async function sarvamChat(messages: ChatMessage[], opts: SarvamChatOption
     throw new Error('SARVAM_API_KEY is not configured. Add it to your .env file.');
   }
 
-  const model = opts.model || 'sarvam-30b';
+  const model = opts.model || 'sarvam-105b';
   const maxTokens = Math.min(opts.maxTokens || 4000, MAX_TOKENS_CAP);
   const body: Record<string, unknown> = {
     model,
