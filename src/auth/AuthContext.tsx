@@ -36,6 +36,7 @@ interface AuthValue {
     name: string;
     email: string;
     password: string;
+    confirmPassword?: string;
     specialization: string;
   }) => Promise<void>;
   signOut: () => Promise<void>;
@@ -80,7 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(
-    async (input: { name: string; email: string; password: string; specialization: string }) => {
+    async (input: {
+      name: string;
+      email: string;
+      password: string;
+      confirmPassword?: string;
+      specialization: string;
+    }) => {
       setDoctor(await signUpDoctor(input));
     },
     [],

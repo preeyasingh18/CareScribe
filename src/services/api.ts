@@ -38,6 +38,23 @@ export function setUnauthorizedHandler(handler: () => void): void {
   onUnauthorized = handler;
 }
 
+/**
+ * Plain fetch for the data endpoints, with the two things every authenticated
+ * call needs: the session cookie and the shared "you have been signed out"
+ * handling.
+ *
+ * `credentials: 'include'` is not optional here. These requests only looked
+ * fine because a same-origin dev proxy sends cookies by default; the moment the
+ * API lives on another origin — which is the deployed layout, Vercel to Render,
+ * and also what VITE_API_BASE_URL does locally — the default drops the cookie
+ * and every one of these endpoints answers 401 with an empty list.
+ */
+async function apiFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const res = await fetch(url, { ...init, credentials: 'include' });
+  if (res.status === 401 && !url.includes('/auth/')) onUnauthorized();
+  return res;
+}
+
 async function fetchWithTimeout(
   url: string,
   init: RequestInit,
@@ -110,6 +127,7 @@ export const signUpDoctor = (input: {
   name: string;
   email: string;
   password: string;
+  confirmPassword?: string;
   specialization: string;
 }): Promise<Doctor | null> => authRequest('signup', input);
 
@@ -217,7 +235,7 @@ export async function deleteConsultationAudio(audioUrl: string): Promise<void> {
     if (!audioUrl) return;
     const fileName = audioUrl.split('/').pop();
     if (!fileName) return;
-    await fetch(`${BASE}/uploads/${encodeURIComponent(fileName)}`, { method: 'DELETE' });
+    await apiFetch(`${BASE}/uploads/${encodeURIComponent(fileName)}`, { method: 'DELETE' });
   } catch {
     // Storage deletion is best-effort; ignore failures.
   }
@@ -261,7 +279,7 @@ export async function generateReport(transcript: string): Promise<ReportData> {
 }
 
 export async function saveConsultation(consultation: Consultation): Promise<void> {
-  const res = await fetch(`${BASE}/save-consultation`, {
+  const res = await apiFetch(`${BASE}/save-consultation`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(consultation),
@@ -270,13 +288,13 @@ export async function saveConsultation(consultation: Consultation): Promise<void
 }
 
 export async function getPatients(): Promise<Patient[]> {
-  const res = await fetch(`${BASE}/patients`, { cache: 'no-store' });
+  const res = await apiFetch(`${BASE}/patients`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch patients');
   return res.json();
 }
 
 export async function getConsultations(): Promise<Consultation[]> {
-  const res = await fetch(`${BASE}/consultations`, { cache: 'no-store' });
+  const res = await apiFetch(`${BASE}/consultations`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch consultations');
   return res.json();
 }
@@ -296,7 +314,7 @@ export async function getPatientHistory(
 }
 
 export async function savePatient(patient: Patient): Promise<void> {
-  const res = await fetch(`${BASE}/patients`, {
+  const res = await apiFetch(`${BASE}/patients`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(patient),
@@ -306,13 +324,13 @@ export async function savePatient(patient: Patient): Promise<void> {
 
 // ── Reports ──────────────────────────────────────────────────
 export async function getReports(): Promise<ReportRecord[]> {
-  const res = await fetch(`${BASE}/reports`, { cache: 'no-store' });
+  const res = await apiFetch(`${BASE}/reports`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch reports');
   return res.json();
 }
 
 export async function saveReport(report: ReportRecord): Promise<void> {
-  const res = await fetch(`${BASE}/reports`, {
+  const res = await apiFetch(`${BASE}/reports`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(report),
@@ -322,13 +340,13 @@ export async function saveReport(report: ReportRecord): Promise<void> {
 
 // ── Prescriptions ────────────────────────────────────────────
 export async function getPrescriptions(): Promise<PrescriptionRecord[]> {
-  const res = await fetch(`${BASE}/prescriptions`, { cache: 'no-store' });
+  const res = await apiFetch(`${BASE}/prescriptions`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch prescriptions');
   return res.json();
 }
 
 export async function savePrescription(prescription: PrescriptionRecord): Promise<void> {
-  const res = await fetch(`${BASE}/prescriptions`, {
+  const res = await apiFetch(`${BASE}/prescriptions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(prescription),
@@ -346,20 +364,20 @@ export interface DashboardStats {
 }
 
 export async function getStats(): Promise<DashboardStats> {
-  const res = await fetch(`${BASE}/stats`, { cache: 'no-store' });
+  const res = await apiFetch(`${BASE}/stats`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch stats');
   return res.json();
 }
 
 // ── Transcripts ──────────────────────────────────────────────
 export async function getTranscripts(): Promise<TranscriptRecord[]> {
-  const res = await fetch(`${BASE}/transcripts`, { cache: 'no-store' });
+  const res = await apiFetch(`${BASE}/transcripts`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch transcripts');
   return res.json();
 }
 
 export async function saveTranscript(transcript: TranscriptRecord): Promise<void> {
-  const res = await fetch(`${BASE}/transcripts`, {
+  const res = await apiFetch(`${BASE}/transcripts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(transcript),

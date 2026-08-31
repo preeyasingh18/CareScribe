@@ -371,7 +371,7 @@ app.post('/api/auth/login', async (req, res) => {
     const email = String(req.body?.email ?? '').trim().toLowerCase();
     const password = String(req.body?.password ?? '');
     if (!email || !password) {
-      return res.status(400).json({ error: 'Enter your email and password.' });
+      return res.status(400).json({ error: 'Please enter your email and password.' });
     }
 
     await connectDB();
@@ -379,7 +379,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // One message for "no such account" and "wrong password" so the form cannot
     // be used to discover which emails are registered.
-    const rejection = { error: 'Those credentials do not match an account.' };
+    const rejection = { error: 'Invalid email or password.' };
     if (!doc) {
       // Spend comparable time on a miss so response timing does not leak either.
       await verifyPassword(password, '$2a$12$dummysaltdummysaltdummysaltdummysaltdummysaltdu');

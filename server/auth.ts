@@ -175,6 +175,7 @@ export function validateSignup(input: {
   name?: unknown;
   email?: unknown;
   password?: unknown;
+  confirmPassword?: unknown;
   specialization?: unknown;
 }): SignupResult {
   const name = String(input.name ?? '').trim();
@@ -189,6 +190,13 @@ export function validateSignup(input: {
     return invalid(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
   }
   if (password.length > 200) return invalid('That password is too long.');
+
+  // The confirmation is optional on the wire (a direct API client has no second
+  // field to fill in), but when it is sent it has to agree — the form's own
+  // check runs in a browser the server does not control.
+  if (input.confirmPassword !== undefined && String(input.confirmPassword) !== password) {
+    return invalid('Passwords do not match.');
+  }
 
   return {
     error: null,

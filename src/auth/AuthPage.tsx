@@ -46,7 +46,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
         return;
       }
       if (password !== confirmPassword) {
-        setError('Those passwords do not match.');
+        setError('Passwords do not match.');
         return;
       }
     }
@@ -54,7 +54,9 @@ export default function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
     setBusy(true);
     try {
       if (isSignup) {
-        await signUp({ name, email, password, specialization });
+        // confirmPassword goes to the server too, so the match is enforced
+        // there as well and not only by this form.
+        await signUp({ name, email, password, confirmPassword, specialization });
       } else {
         await signIn(email, password);
       }
