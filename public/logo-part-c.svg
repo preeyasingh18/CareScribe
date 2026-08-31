@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="9 9 46 46" width="64" height="64" fill="none" role="img" aria-label="">
+  <!-- ENTRANCE PART 1 OF 2 — the complete "C", nothing else.
+       Same viewBox and same path data as public/logo-mark.svg, so rendering
+       this over logo-part-mic.svg at the same size reconstitutes the mark
+       exactly. Splitting by ELEMENT rather than by a clip-path is what keeps
+       the C whole: a vertical clip cuts the ring into a left arc plus two
+       stray top/bottom-right fragments, which is not a "C" on either side. -->
+  <defs>
+    <linearGradient id="cs-part-c" x1="10" y1="50" x2="48" y2="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4c1d95"/>
+      <stop offset="55%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M44.23 20.19A17 17 0 1 0 44.23 43.81" stroke="url(#cs-part-c)" stroke-width="6" stroke-linecap="round"/>
+</svg>

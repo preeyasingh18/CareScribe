@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
-import BrandLogo, { BRAND_LOGO_SRC, MARK_SPLIT } from '../components/BrandLogo';
+import BrandLogo, { LOGO_PART_C_SRC, LOGO_PART_MIC_SRC } from '../components/BrandLogo';
 import { EASE_OUT } from './motion';
 
 /**
@@ -9,17 +9,19 @@ import { EASE_OUT } from './motion';
  *
  * How the logo is never distorted
  * -------------------------------
- * There is exactly one piece of artwork — `public/logo-mark.svg` — and it is
- * never redrawn, re-pathed or morphed. The two entering "halves" are two copies
- * of that same <img>, each showing a different slice of it via `clip-path`:
+ * The artwork is never redrawn, re-pathed or morphed. The two entering pieces
+ * are separate files carrying the SAME paths at the SAME viewBox as the whole
+ * mark — split by ELEMENT, so each piece is a complete shape:
  *
- *     left  = clip-path: inset(0 68% 0 0)   → the C's outer arc
- *     right = clip-path: inset(0 0 0 31.8%) → the whole microphone + right arcs
+ *     left  = logo-part-c.svg    → the whole, continuous "C"
+ *     right = logo-part-mic.svg  → the microphone, and no arc at all
  *
- * Because both copies are the same file at the same size, once both sit at
- * x = 0 their complementary crops reconstitute the artwork pixel-for-pixel —
- * there is no seam to hide and nothing has been reshaped. A cross-fade then
- * hands over to a single complete <img> so the flight moves ONE element.
+ * Nothing is clipped. An earlier version sliced a single image with a vertical
+ * clip-path, which cut the ring into a left arc plus two orphaned top/bottom
+ * right fragments — leaving a partial C on both sides. Because both files share
+ * the mark's coordinate system, once they settle at x = 0 they overlay into the
+ * artwork exactly. A cross-fade then hands over to a single complete <img> so
+ * the flight moves ONE element.
  *
  * Only `x`, `opacity` and a uniform `scale` are ever animated, and only on the
  * wrappers. No path animation, no scaleX/scaleY, no rotation, no skew.
@@ -113,11 +115,6 @@ export default function IntroAnimation({ targetRect, onFinished }: Props) {
   const flying = flight !== null;
   const complete = reduced || assembled;
 
-  // A hair of overlap at the seam rather than a hair of gap: the pixels are
-  // identical on both sides, so overlapping is invisible while a gap would not be.
-  const leftClip = `inset(0 ${(1 - MARK_SPLIT) * 100}% 0 0)`;
-  const rightClip = `inset(0 0 0 ${MARK_SPLIT * 100 - 0.2}%)`;
-
   return (
     <motion.div
       className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden bg-white"
@@ -170,26 +167,24 @@ export default function IntroAnimation({ targetRect, onFinished }: Props) {
             animate={{ opacity: assembled ? 0 : 1 }}
             transition={{ duration: 0.2, ease: 'linear' }}
           >
-            {/* the C — in from the left */}
+            {/* the complete C — in from the left */}
             <motion.img
-              src={BRAND_LOGO_SRC}
+              src={LOGO_PART_C_SRC}
               alt=""
               aria-hidden="true"
               draggable={false}
               className="absolute inset-0 h-full w-full select-none"
-              style={{ clipPath: leftClip, WebkitClipPath: leftClip }}
               initial={{ x: -entryOffset }}
               animate={{ x: 0 }}
               transition={{ duration: 0.85, ease: EASE_OUT }}
             />
-            {/* the microphone — in from the right, a beat behind */}
+            {/* the microphone only — in from the right, a beat behind */}
             <motion.img
-              src={BRAND_LOGO_SRC}
+              src={LOGO_PART_MIC_SRC}
               alt=""
               aria-hidden="true"
               draggable={false}
               className="absolute inset-0 h-full w-full select-none"
-              style={{ clipPath: rightClip, WebkitClipPath: rightClip }}
               initial={{ x: entryOffset }}
               animate={{ x: 0 }}
               transition={{ duration: 0.85, delay: 0.08, ease: EASE_OUT }}

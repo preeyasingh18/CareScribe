@@ -26,12 +26,17 @@
 export const BRAND_LOGO_SRC = '/logo-mark.svg';
 
 /**
- * Where the artwork divides into its two pieces, as a fraction of width.
- * Left of this line is the C's outer arc; right of it is the whole
- * microphone plus the C's right-hand arcs. Verified against the rendered
- * asset — the microphone must never be cut by this line.
+ * The mark's two pieces, for the entrance animation, as separate files holding
+ * the SAME paths and the SAME viewBox as the whole mark.
+ *
+ * They are split by ELEMENT, not by geometry. An earlier version sliced one
+ * image with a vertical clip-path, which cut the "C" ring into a left arc plus
+ * two orphaned top/bottom-right fragments — so neither side held a whole C and
+ * a stray arc rode along on the right with the microphone. Overlaying these two
+ * files instead reproduces the mark exactly, with nothing clipped.
  */
-export const MARK_SPLIT = 0.32;
+export const LOGO_PART_C_SRC = '/logo-part-c.svg';
+export const LOGO_PART_MIC_SRC = '/logo-part-mic.svg';
 
 export default function BrandLogo({
   size,
