@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Mic, Brain, FileText } from 'lucide-react';
 import { Reveal } from '../motion';
 import WaveBackdrop from '../WaveBackdrop';
@@ -21,15 +22,16 @@ const PILLARS = [
 ];
 
 export default function About() {
+  // Nothing is highlighted until the visitor picks a step, and the pick then
+  // sticks until another one is chosen. Selection is the same on every device:
+  // hover only previews it, so touch screens lose nothing.
+  const [active, setActive] = useState<number | null>(null);
+
   return (
     <section
       id="about"
       className="relative scroll-mt-24 overflow-hidden border-y border-slate-100 bg-slate-50/60 py-20 sm:py-28"
     >
-      <WaveBackdrop />
-
-      {/* Content sits above the backdrop; the cards are opaque so the wave
-          never reads through their text. */}
       <div className="relative z-10 mx-auto max-w-7xl px-5 sm:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <Reveal>
@@ -52,21 +54,41 @@ export default function About() {
           </Reveal>
         </div>
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {PILLARS.map((pillar, i) => {
-            const Icon = pillar.icon;
-            return (
-              <Reveal key={pillar.title} delay={0.1 + i * 0.09}>
-                <div className="group h-full rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg hover:shadow-brand-950/5">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600 transition-colors duration-300 group-hover:bg-brand-600 group-hover:text-white">
-                    <Icon size={22} strokeWidth={2.1} />
-                  </div>
-                  <h3 className="mt-5 text-lg font-bold tracking-tight text-brand-950">{pillar.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{pillar.body}</p>
-                </div>
-              </Reveal>
-            );
-          })}
+        {/* The waveform is the visual of this section: the three steps float
+            straight over it with no panel of any kind between them and it. The
+            wave lives inside this wrapper so it always tracks the steps rather
+            than a fixed offset from the section top, which drifted into the
+            copy above whenever the paragraph wrapped differently. */}
+        <div className="relative mt-14 sm:mt-16">
+          <WaveBackdrop />
+
+          <div className="relative grid items-start gap-10 sm:grid-cols-3 sm:gap-5 lg:gap-10">
+            {PILLARS.map((pillar, i) => {
+              const Icon = pillar.icon;
+              const isActive = active === i;
+              return (
+                <Reveal key={pillar.title} delay={0.1 + i * 0.09}>
+                  <button
+                    type="button"
+                    aria-pressed={isActive}
+                    data-active={isActive}
+                    onClick={() => setActive(i)}
+                    className="pillar-step flex w-full cursor-pointer flex-col items-center px-2 py-3 text-center sm:px-1 lg:px-3"
+                  >
+                    <span className="pillar-step-icon flex h-14 w-14 shrink-0 items-center justify-center rounded-full">
+                      <Icon size={24} strokeWidth={2} />
+                    </span>
+                    <span className="pillar-step-title mt-4 text-base font-bold tracking-tight sm:text-lg">
+                      {pillar.title}
+                    </span>
+                    <span className="pillar-step-body mt-2 max-w-[34ch] text-sm leading-relaxed">
+                      {pillar.body}
+                    </span>
+                  </button>
+                </Reveal>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>

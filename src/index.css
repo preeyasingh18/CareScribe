@@ -30,6 +30,101 @@
   }
 }
 
+/* ── About-section steps ("Listen / Understand / Document") ─────────────
+   Deliberately card-less. There is no panel, border, radius, shadow or glass
+   behind these — the three steps float directly over the voice waveform, which
+   stays continuously visible across the whole section. The only thing that ever
+   picks up a surface is the small icon, and only on the hovered or selected
+   step.
+
+   Hover styling is gated behind `hover: hover` because a touch screen has no
+   hover to reveal anything: there, tapping sets the selected state below, which
+   is identical in appearance and works on every device. */
+.pillar-step {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pillar-step-icon,
+.pillar-step-title,
+.pillar-step-body {
+  transition:
+    color 260ms ease,
+    background-color 260ms ease,
+    box-shadow 300ms ease,
+    transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Default: icon sits bare on the waveform — no circle, no tile, no box. */
+.pillar-step-icon {
+  color: var(--color-brand-600);
+}
+.pillar-step-title {
+  color: rgb(46 16 101 / 0.85);
+}
+.pillar-step-body {
+  color: #475569; /* slate-600 */
+}
+
+/* The one surface in the section: a soft ring/glow around the small icon of
+   the active step. Never a rectangle, never behind the text. */
+.pillar-step[data-active='true'] .pillar-step-icon,
+.pillar-step:focus-visible .pillar-step-icon {
+  color: #fff;
+  background-color: var(--color-brand-600);
+  box-shadow:
+    0 0 0 7px rgb(124 58 237 / 0.13),
+    0 10px 24px -8px rgb(76 29 149 / 0.5);
+  transform: scale(1.08);
+}
+.pillar-step[data-active='true'] .pillar-step-title {
+  color: var(--color-brand-950);
+}
+.pillar-step[data-active='true'] .pillar-step-body {
+  color: #334155; /* slate-700 */
+}
+
+/* Keyboard focus needs a visible indicator; an outline is not a card. */
+.pillar-step:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 6px;
+  border-radius: 16px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pillar-step:hover .pillar-step-icon {
+    color: var(--color-brand-700);
+    background-color: rgb(237 233 254 / 0.92);
+    transform: scale(1.06);
+  }
+  .pillar-step:hover[data-active='true'] .pillar-step-icon {
+    color: #fff;
+    background-color: var(--color-brand-600);
+  }
+  .pillar-step:hover .pillar-step-title {
+    color: var(--color-brand-950);
+  }
+  .pillar-step:hover .pillar-step-body {
+    color: #334155;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pillar-step,
+  .pillar-step-icon,
+  .pillar-step-title,
+  .pillar-step-body {
+    transition: none;
+  }
+  .pillar-step[data-active='true'] .pillar-step-icon,
+  .pillar-step:hover .pillar-step-icon {
+    transform: none;
+  }
+}
+
 /* Custom styles for professional medical dashboard */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
