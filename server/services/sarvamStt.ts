@@ -130,7 +130,11 @@ async function transcribeSync(buffer: Buffer, mimetype: string, languageCode: st
   // Uint8Array body (a plain ArrayBuffer view Blob accepts cleanly).
   const blob = new Blob([new Uint8Array(buffer)], { type: sarvamAudioMime(mimetype) });
   form.append('file', blob, `audio.${extensionFor(mimetype)}`);
-  form.append('model', 'saarika:v2.5');
+  // saaras:v3 in transcribe mode — the same model the batch path uses, so both
+  // routes behave identically. (Sarvam retires models and then answers 400, as
+  // it already did for sarvam-30b, so the two paths must not drift apart.)
+  form.append('model', 'saaras:v3');
+  form.append('mode', 'transcribe');
   form.append('language_code', languageCode);
 
   const res = await fetch(`${sarvamOrigin()}/speech-to-text`, {

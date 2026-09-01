@@ -25,7 +25,7 @@ const FEATURES = [
   {
     icon: ClipboardList,
     title: 'Structured Documentation',
-    body: 'Complaints, history, examination, assessment and plan — each in its own section.',
+    body: 'Complaints, history, examination, assessment and plan, each in its own section.',
   },
   {
     icon: Pill,
@@ -50,7 +50,7 @@ const FEATURES = [
   {
     icon: ShieldCheck,
     title: 'Secure Medical Data',
-    body: 'Records live in your own MongoDB database, not a shared third-party store.',
+    body: 'Your information is securely stored with privacy and security in mind.',
   },
 ];
 

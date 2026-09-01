@@ -78,7 +78,7 @@ async function fetchWithTimeout(
       throw new Error('The request timed out. Please check your connection and try again.');
     }
     throw new Error(
-      'Could not reach the server. Make sure the backend is running (npm run dev:all), then try again.',
+      'Could not reach CareScribe right now. Please check your connection and try again.',
     );
   } finally {
     clearTimeout(timer);
@@ -99,6 +99,19 @@ export interface Doctor {
   name: string;
   email: string;
   specialization: string;
+  // Optional profile details. Accounts created before these existed come back
+  // as empty strings, so the UI shows a blank field rather than breaking.
+  phoneNumber?: string;
+  hospitalName?: string;
+  createdAt?: string;
+}
+
+/** The editable half of a profile. Email is deliberately not in here. */
+export interface ProfileUpdate {
+  name: string;
+  specialization: string;
+  phoneNumber: string;
+  hospitalName: string;
 }
 
 async function authRequest(path: string, body?: unknown): Promise<Doctor | null> {
@@ -133,6 +146,55 @@ export const signUpDoctor = (input: {
 
 export const logInDoctor = (email: string, password: string): Promise<Doctor | null> =>
   authRequest('login', { email, password });
+
+/**
+ * Save the signed-in doctor's own profile.
+ *
+ * There is no id in the URL or the body: the server resolves the account from
+ * the session cookie, so this cannot be pointed at someone else's record.
+ */
+export async function updateDoctorProfile(input: ProfileUpdate): Promise<Doctor | null> {
+  const res = await fetchWithTimeout(
+    `${BASE}/auth/profile`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+    20000,
+  );
+  if (!res.ok) throw new Error(await errorMessage(res, 'Could not save your profile.'));
+  const data = await res.json();
+  return (data?.doctor as Doctor) ?? null;
+}
+
+// ── password reset ───────────────────────────────────────────
+// Three small calls mirroring the server's three steps. None is authenticated —
+// the whole point is that the doctor cannot sign in.
+
+async function resetRequest<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetchWithTimeout(
+    `${BASE}/auth/${path}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+    30000,
+  );
+  if (!res.ok) throw new Error(await errorMessage(res, 'Something went wrong. Please try again.'));
+  return res.json();
+}
+
+/** Ask for a reset link. Answers the same way whether or not the email exists. */
+export const requestPasswordReset = (email: string): Promise<{ sent: boolean; message: string }> =>
+  resetRequest('forgot-password', { email });
+
+/** Check a link before showing the new-password form. */
+export const checkResetToken = (token: string): Promise<{ valid: boolean; email: string }> =>
+  resetRequest('reset-token', { token });
+
+export const resetPassword = (input: {
+  token: string;
+  password: string;
+  confirmPassword: string;
+}): Promise<{ success: boolean }> => resetRequest('reset-password', input);
 
 export async function logOutDoctor(): Promise<void> {
   await fetchWithTimeout(`${BASE}/auth/logout`, { method: 'POST' }, 15000);
@@ -189,6 +251,11 @@ export function uploadConsultationAudio(
 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${BASE}/transcribe`);
+    // Same requirement as every fetch in this module: /api/transcribe is behind
+    // requireAuth, and BASE is cross-origin whenever VITE_API_BASE_URL is set
+    // (including the deployed Vercel -> Render layout). Without this the cookie
+    // is dropped and the upload comes back 401.
+    xhr.withCredentials = true;
     // Whisper can take a while — match the fetch-based timeout (3 minutes).
     xhr.timeout = 180000;
 
@@ -217,7 +284,7 @@ export function uploadConsultationAudio(
     xhr.onerror = () =>
       reject(
         new Error(
-          'Could not reach the server. Make sure the backend is running (npm run dev:all), then try again.',
+          'Could not reach CareScribe right now. Please check your connection and try again.',
         ),
       );
     xhr.ontimeout = () =>

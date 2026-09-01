@@ -59,7 +59,7 @@ export default function Navbar({ markRef, markVisible, animateIn }: Props) {
           type="button"
           onClick={() => go('home')}
           className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
-          aria-label="CareScribe AI — back to top"
+          aria-label="CareScribe, back to top"
         >
           {/* Same <img src="/logo.svg"> the intro animates, at nav size — the
               hand-off has to land on identical artwork, not a redrawn variant. */}
@@ -73,7 +73,6 @@ export default function Navbar({ markRef, markVisible, animateIn }: Props) {
           <span className="text-xl font-bold tracking-tight">
             <span className="text-brand-950">Care</span>
             <span className="text-brand-600">Scribe</span>
-            <span className="ml-1 align-top text-xs font-semibold text-brand-400">AI</span>
           </span>
         </button>
 

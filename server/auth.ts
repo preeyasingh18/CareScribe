@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectDB } from './db';
@@ -202,4 +203,112 @@ export function validateSignup(input: {
     error: null,
     value: { name, email, password, specialization: specialization || 'General Practice' },
   };
+}
+
+// ── profile updates ──────────────────────────────────────────────────────────
+
+export interface ProfileInput {
+  name: string;
+  specialization: string;
+  phoneNumber: string;
+  hospitalName: string;
+}
+
+export interface ProfileResult {
+  error: string | null;
+  value: ProfileInput | null;
+}
+
+/**
+ * Validate an edit to the signed-in doctor's own profile.
+ *
+ * Deliberately narrow: it returns only the four editable fields, so nothing
+ * else in the request body — `email`, `passwordHash`, `id`, `doctorId` — can
+ * reach the update. Email is not editable here because it is the login
+ * identifier and changing it needs a re-verification flow this app does not
+ * have yet.
+ *
+ * Phone and hospital are OPTIONAL. Clearing them is a valid edit, so an empty
+ * string is accepted and stored as empty rather than rejected.
+ */
+export function validateProfile(input: {
+  name?: unknown;
+  specialization?: unknown;
+  phoneNumber?: unknown;
+  hospitalName?: unknown;
+}): ProfileResult {
+  const bad = (error: string): ProfileResult => ({ error, value: null });
+
+  const name = String(input.name ?? '').trim();
+  const specialization = String(input.specialization ?? '').trim();
+  const phoneNumber = String(input.phoneNumber ?? '').trim();
+  const hospitalName = String(input.hospitalName ?? '').trim();
+
+  if (!name) return bad('Please enter your full name.');
+  if (name.length > 120) return bad('That name is too long.');
+  if (specialization.length > 120) return bad('That specialization is too long.');
+  if (hospitalName.length > 160) return bad('That hospital or clinic name is too long.');
+
+  // Only checked when something was actually entered — an empty phone is fine.
+  if (phoneNumber) {
+    if (phoneNumber.length > 32) return bad('That phone number is too long.');
+    if (!/^[+()\d][\d\s()+-]{5,}$/.test(phoneNumber)) {
+      return bad('Please enter a valid phone number, or leave it blank.');
+    }
+  }
+
+  return { error: null, value: { name, specialization, phoneNumber, hospitalName } };
+}
+
+// ── password reset ───────────────────────────────────────────────────────────
+
+/** How long a reset link stays valid. Short on purpose. */
+export const RESET_TTL_MINUTES = 30;
+/** Links that may be requested for one account inside the window below. */
+export const RESET_MAX_SENDS = 5;
+export const RESET_SEND_WINDOW_MINUTES = 15;
+
+/**
+ * Build a reset token as `<lookupId>.<secret>`.
+ *
+ * The lookup half indexes the row; only the secret half is hashed and compared.
+ * Splitting them means the database is searched by a public id rather than by
+ * scanning every outstanding row to bcrypt-compare it, while the part that
+ * actually authorises the reset is still never stored in the clear.
+ *
+ * Both halves come from `crypto.randomBytes`: a guessable reset link is a
+ * password bypass, so the generator has to be the strong one.
+ */
+export function generateResetToken(): { lookupId: string; secret: string; token: string } {
+  const lookupId = crypto.randomBytes(12).toString('base64url');
+  const secret = crypto.randomBytes(32).toString('base64url');
+  return { lookupId, secret, token: `${lookupId}.${secret}` };
+}
+
+/** Split a token back into its two halves. Returns null if it is malformed. */
+export function parseResetToken(token: unknown): { lookupId: string; secret: string } | null {
+  const raw = String(token || '');
+  const dot = raw.indexOf('.');
+  if (dot <= 0 || dot === raw.length - 1) return null;
+  return { lookupId: raw.slice(0, dot), secret: raw.slice(dot + 1) };
+}
+
+/**
+ * Hash the token secret before storing it. Same reasoning as passwords: the
+ * database must never hold anything that can be replayed as-is. A lower cost
+ * than password hashing because these live for minutes.
+ */
+export const hashSecret = (value: string): Promise<string> => bcrypt.hash(value, 8);
+export const verifySecret = (value: string, hash: string): Promise<boolean> =>
+  bcrypt.compare(value, hash);
+
+/** Validate a new password chosen during a reset. */
+export function validateNewPassword(password: unknown, confirm: unknown): string | null {
+  const value = String(password ?? '');
+  if (value.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  }
+  if (value.length > 200) return 'That password is too long.';
+  if (confirm !== undefined && String(confirm) !== value) return 'Passwords do not match.';
+  return null;
 }

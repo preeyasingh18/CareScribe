@@ -21,6 +21,11 @@ const DoctorSchema = new Schema(
     // cannot be defeated by a different capitalisation of the same address.
     email: { type: String, required: true, unique: true, index: true, lowercase: true, trim: true },
     specialization: { type: String, default: 'General Practice', trim: true },
+    // Optional profile details the doctor can fill in later. Accounts created
+    // before these existed simply have no value, which reads as an empty field
+    // rather than an error — no migration is needed.
+    phoneNumber: { type: String, default: '', trim: true },
+    hospitalName: { type: String, default: '', trim: true },
     passwordHash: { type: String, required: true },
   },
   { strict: true, timestamps: true, versionKey: false, collection: 'doctors' },
@@ -31,15 +36,28 @@ export interface DoctorDoc {
   name: string;
   email: string;
   specialization: string;
+  phoneNumber?: string;
+  hospitalName?: string;
   passwordHash: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-/** The only shape of a doctor that is ever allowed to reach the browser. */
+/**
+ * The only shape of a doctor that is ever allowed to reach the browser.
+ *
+ * `passwordHash` is absent by construction, not by deletion: every read path
+ * that reaches the client builds its response from this function, so a new
+ * field on the schema cannot leak simply by being added.
+ */
 export interface PublicDoctor {
   id: string;
   name: string;
   email: string;
   specialization: string;
+  phoneNumber: string;
+  hospitalName: string;
+  createdAt?: string;
 }
 
 export function toPublic(doc: DoctorDoc): PublicDoctor {
@@ -48,6 +66,10 @@ export function toPublic(doc: DoctorDoc): PublicDoctor {
     name: doc.name,
     email: doc.email,
     specialization: doc.specialization,
+    // Older records predate these fields; an absent value is an empty one.
+    phoneNumber: doc.phoneNumber || '',
+    hospitalName: doc.hospitalName || '',
+    createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : undefined,
   };
 }
 

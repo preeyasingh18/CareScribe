@@ -39,7 +39,6 @@ export default function Footer() {
               <span className="text-lg font-bold tracking-tight">
                 <span className="text-brand-950">Care</span>
                 <span className="text-brand-600">Scribe</span>
-                <span className="ml-1 align-top text-[10px] font-semibold text-brand-400">AI</span>
               </span>
             </div>
             <div className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-500">
@@ -76,8 +75,8 @@ export default function Footer() {
 
         <div className="mt-12 border-t border-slate-100 pt-6">
           <p className="text-xs text-slate-400">
-            © {new Date().getFullYear()} CareScribe AI. Clinical documentation support only —
-            generated reports are drafts and must be reviewed by the treating clinician.
+            © {new Date().getFullYear()} CareScribe. Clinical documentation support only. Reports
+            are drafts and must be reviewed by the treating clinician.
           </p>
         </div>
       </div>

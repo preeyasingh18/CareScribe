@@ -46,11 +46,24 @@ const SHARED_RULES =
 // reasoning-heavy part). Merged back into the full ReportData shape afterwards.
 const SECTION_GROUPS: { label: string; schema: string; guidance: string }[] = [
   {
-    label: 'history',
+    label: 'presenting',
     schema:
-      '{"clinicalOverview":"","chiefComplaints":[{"complaint":"","duration":"","severity":""}],"historyOfPresentIllness":[""],"pastMedicalHistory":[""],"surgicalHistory":[""],"medicationHistory":[{"medicine":"","strength":"","dose":"","route":"","frequency":"","timing":"","purpose":"","compliance":""}],"allergies":[{"allergy":"","reaction":"","severity":""}],"familyHistory":[""],"socialHistory":[""]}',
+      '{"clinicalOverview":"","chiefComplaints":[{"complaint":"","duration":"","severity":""}],"historyOfPresentIllness":[""]}',
     guidance:
-      'clinicalOverview: 2-4 sentence physician summary. chiefComplaints: main reasons for visit with duration/severity. historyOfPresentIllness: onset, progression, associated and denied symptoms, prior treatment (one fact each). pastMedicalHistory: chronic/past diseases. surgicalHistory: past surgeries. medicationHistory: medicines already taken before this visit. allergies; familyHistory; socialHistory (smoking/alcohol/diet/occupation) — only as stated.',
+      'clinicalOverview: 2-4 sentence physician summary. chiefComplaints: main reasons for visit with duration/severity. historyOfPresentIllness: onset, progression, associated and denied symptoms, prior treatment (one fact each).',
+  },
+  {
+    label: 'background',
+    schema: '{"pastMedicalHistory":[""],"surgicalHistory":[""],"familyHistory":[""],"socialHistory":[""]}',
+    guidance:
+      'pastMedicalHistory: chronic/past diseases. surgicalHistory: past surgeries. familyHistory: diseases in relatives. socialHistory: smoking/alcohol/diet/occupation — only as stated.',
+  },
+  {
+    label: 'meds-taken',
+    schema:
+      '{"medicationHistory":[{"medicine":"","strength":"","dose":"","route":"","frequency":"","timing":"","purpose":"","compliance":""}],"allergies":[{"allergy":"","reaction":"","severity":""}]}',
+    guidance:
+      'medicationHistory: medicines already being taken BEFORE this visit, with dose/frequency exactly as stated. allergies: substance, reaction and severity as stated.',
   },
   {
     label: 'systems',
@@ -66,11 +79,17 @@ const SECTION_GROUPS: { label: string; schema: string; guidance: string }[] = [
       'clinicalMeasurements: vitals EXACTLY as stated; any other measurement goes in "other"; leave unmeasured vitals "". physicalExamination: examination findings grouped by area (General, Cardiovascular, Respiratory, Abdomen, Neurological, Skin, ENT). Only areas actually examined.',
   },
   {
-    label: 'plan',
-    schema:
-      '{"assessment":[""],"prescribedMedications":[{"medicine":"","strength":"","dose":"","route":"","frequency":"","timing":"","duration":"","instructions":""}],"ordersDiagnostics":[{"name":"","findings":[""]}],"advice":[""],"redFlags":[""],"followUp":{"date":"","duration":"","reports":"","instructions":""}}',
+    label: 'assessment',
+    schema: '{"assessment":[""],"advice":[""],"redFlags":[""]}',
     guidance:
-      'assessment: diagnoses, suspected conditions and clinical concerns from the transcript only. prescribedMedications: ONLY medicines prescribed/changed in THIS visit. ordersDiagnostics: tests ordered, grouped by category name ("Laboratory Orders", "Imaging Orders", "Cardiac Evaluation" or "Other Diagnostic Tests"). advice: care plan and lifestyle instructions. redFlags: warning signs to watch for. followUp: date, duration, required reports and next-visit instructions.',
+      'assessment: diagnoses, suspected conditions and clinical concerns from the transcript only. advice: care plan and lifestyle instructions given. redFlags: warning signs the patient was told to watch for.',
+  },
+  {
+    label: 'prescription',
+    schema:
+      '{"prescribedMedications":[{"medicine":"","strength":"","dose":"","route":"","frequency":"","timing":"","duration":"","instructions":""}],"ordersDiagnostics":[{"name":"","findings":[""]}],"followUp":{"date":"","duration":"","reports":"","instructions":""}}',
+    guidance:
+      'prescribedMedications: ONLY medicines prescribed or changed in THIS visit. ordersDiagnostics: tests ordered, grouped by category name ("Laboratory Orders", "Imaging Orders", "Cardiac Evaluation" or "Other Diagnostic Tests"). followUp: date, duration, required reports and next-visit instructions.',
   },
 ];
 
@@ -124,26 +143,31 @@ async function condenseIfLong(text: string): Promise<string> {
   if (text.length <= CONDENSE_THRESHOLD) return text;
   const chunks = chunkText(text, CONDENSE_CHUNK);
   console.log('[generate-report] long transcript — condensing to facts in', chunks.length, 'chunks');
-  const factParts: string[] = [];
-  for (const chunk of chunks) {
-    try {
-      const facts = await sarvamChat(
-        [
-          {
-            role: 'system',
-            content:
-              'Summarise the consultation transcript into concise English clinical bullet points, preserving ALL symptoms, durations, past/family/social history, medicines with doses and frequencies, allergies, vitals, examination findings, diagnoses, tests ordered, advice and follow-up. English only. Plain text bullets, no JSON.',
-          },
-          { role: 'user', content: `/no_think\nTranscript:\n${chunk}` },
-        ],
-        { maxTokens: 4096, reasoningEffort: 'low' },
-      );
-      factParts.push(facts.trim());
-    } catch (err: any) {
-      console.error('[generate-report] facts condensation failed for a chunk; keeping raw text:', err?.message || err);
-      factParts.push(chunk);
-    }
-  }
+  // Chunks are independent, so condense them concurrently for the same reason
+  // the section groups run concurrently.
+  const factParts = await Promise.all(
+    chunks.map(async chunk => {
+      try {
+        const facts = await sarvamChat(
+          [
+            {
+              role: 'system',
+              content:
+                'Summarise the consultation transcript into concise English clinical bullet points, preserving ALL symptoms, durations, past/family/social history, medicines with doses and frequencies, allergies, vitals, examination findings, diagnoses, tests ordered, advice and follow-up. English only. Plain text bullets, no JSON.',
+            },
+            { role: 'user', content: `/no_think
+Transcript:
+${chunk}` },
+          ],
+          { maxTokens: 4096, reasoningEffort: 'low' },
+        );
+        return facts.trim();
+      } catch (err: any) {
+        console.error('[generate-report] facts condensation failed for a chunk; keeping raw text:', err?.message || err);
+        return chunk;
+      }
+    }),
+  );
   return factParts.join('\n');
 }
 
@@ -155,23 +179,36 @@ async function extractGroup(text: string, group: (typeof SECTION_GROUPS)[number]
   const system = `${SHARED_RULES}\n\nExtract ONLY these fields as a JSON object:\n${group.schema}\n\nGuidance: ${group.guidance}`;
   const user = `/no_think\nConsultation transcript:\n${text}`;
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  // Deliberately a single attempt: temperature is 0, so re-sending the identical
+  // request reproduces the identical failure. The old retry turned a 75s dead
+  // end into a 150s one without ever changing the outcome.
+  {
     try {
       const content = await sarvamChat(
         [
           { role: 'system', content: system },
           { role: 'user', content: user },
         ],
+        // Thinking stays ON here. Measured on this model: disabling it did not
+        // meaningfully reduce the completion tokens (which are what the latency
+        // tracks, at roughly 30 tokens/second) and made the groups slower in
+        // practice. The win came from running the groups concurrently instead.
         { maxTokens: 4096, reasoningEffort: 'low' },
       );
       const obj = parseJson(content);
       if (obj && typeof obj === 'object' && !Array.isArray(obj) && Object.keys(obj).length) {
         return obj as Record<string, unknown>;
       }
-      console.error(`[generate-report] group "${group.label}" returned empty/unparseable JSON (attempt ${attempt})`);
+      console.error(`[generate-report] group "${group.label}" returned empty/unparseable JSON`);
     } catch (err: any) {
+      // A timeout is not worth a second full-length attempt — it would just
+      // double the wait for a group that is already the slow one.
+      if (err?.timeout) {
+        console.error(`[generate-report] group "${group.label}" timed out — leaving it empty`);
+        return {};
+      }
       if (!err?.emptyContent) throw err; // real API/transport error → surface it
-      console.error(`[generate-report] group "${group.label}" token budget exhausted (attempt ${attempt}) — retrying`);
+      console.error(`[generate-report] group "${group.label}" token budget exhausted`);
     }
   }
   console.error(`[generate-report] group "${group.label}" could not be generated — leaving it empty`);
@@ -211,10 +248,32 @@ export async function generateMedicalReport(transcript: string): Promise<ReportD
 
   // 3) Generate the report in small section groups and merge them. Sectioning keeps
   //    every response within the token budget even for a dense consultation.
-  console.log('[generate-report] extracting', SECTION_GROUPS.length, 'section groups | source chars:', source.length);
+  //
+  //    The groups run CONCURRENTLY. They are independent by construction — each
+  //    reads the same source text and writes a disjoint set of keys — so running
+  //    them one after another simply added up four round trips for no benefit,
+  //    which is what made generation take about three minutes. Wall-clock time is
+  //    now roughly the slowest single group instead of the sum of all four.
+  console.log('[generate-report] extracting', SECTION_GROUPS.length, 'section groups in parallel | source chars:', source.length);
+  const groupsStarted = Date.now();
+  const results = await Promise.all(
+    SECTION_GROUPS.map(async group => {
+      const started = Date.now();
+      const obj = await extractGroup(source, group);
+      console.log(`[generate-report] group "${group.label}" done in ${Date.now() - started}ms | keys: ${Object.keys(obj).length}`);
+      return obj;
+    }),
+  );
+  console.log('[generate-report] all groups finished in', Date.now() - groupsStarted, 'ms');
+
   const merged: Record<string, unknown> = {};
-  for (const group of SECTION_GROUPS) {
-    Object.assign(merged, await extractGroup(source, group));
+  for (const obj of results) Object.assign(merged, obj);
+
+  // Every group coming back empty means the model produced nothing usable, not
+  // that the consultation was empty. Surface that rather than handing the UI a
+  // blank report that looks like a successful generation.
+  if (!Object.keys(merged).length) {
+    throw new Error('The report could not be generated from this transcript. Please try again.');
   }
 
   // 4) Merge onto a full empty report so every field/section always exists.

@@ -47,7 +47,11 @@ export default function Sidebar({ activeView, onNavigate, onSignOut }: SidebarPr
         })}
       </div>
 
-      <DoctorMenu onNavigateSettings={() => onNavigate('settings')} onSignOut={onSignOut} />
+      <DoctorMenu
+        onNavigateProfile={() => onNavigate('profile')}
+        onNavigateSettings={() => onNavigate('settings')}
+        onSignOut={onSignOut}
+      />
     </div>
   );
 }

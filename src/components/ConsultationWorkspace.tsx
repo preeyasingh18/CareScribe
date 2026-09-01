@@ -42,6 +42,7 @@ import {
 } from '../utils/report';
 import { buildVisitComparison, reportHasClinicalContent } from '../utils/compareVisits';
 import { createVAD, VADController } from '../utils/vad';
+import { useAuth } from '../auth/AuthContext';
 // The export libraries (jsPDF / docx) are heavy, so they are loaded on demand
 // via dynamic import() inside the download handlers — keeps the initial bundle small.
 
@@ -167,6 +168,7 @@ function isLikelyHallucination(text: string): boolean {
 }
 
 export default function ConsultationWorkspace({ consultation, patientHistory, onFinish, onSaveReport, onExit, onNewSession, onSelectSession, onSessionUpdate }: ConsultationWorkspaceProps) {
+  const { doctor } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   // Live-recording is paused (still the same consultation; transcript retained).
   const [isPaused, setIsPaused] = useState(false);
@@ -189,8 +191,21 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
   );
   const [error, setError] = useState<string | null>(null);
   const [downloadOpen, setDownloadOpen] = useState(false);
-  // Doctor's name for the final review / signature block (print + export only).
+  // Doctor identity for the final review / signature block (print + export).
+  // Seeded from the authenticated session below — never typed by hand — and
+  // still editable for a one-off override on a single report.
   const [doctorName, setDoctorName] = useState('');
+  const [doctorDesignation, setDoctorDesignation] = useState('');
+
+  // The signature block belongs to whoever is signed in. Seeding from the
+  // session (rather than leaving the fields blank) means every report carries
+  // the right clinician automatically, and a second doctor signing in on the
+  // same browser gets their own name — nothing here is hardcoded.
+  useEffect(() => {
+    if (!doctor) return;
+    setDoctorName(prev => (prev.trim() ? prev : doctor.name || ''));
+    setDoctorDesignation(prev => (prev.trim() ? prev : doctor.specialization || ''));
+  }, [doctor]);
 
   // originalTranscript = raw Whisper output (in the originally spoken language).
   // displayedTranscript = what is shown in the textarea (translated + editable).
@@ -540,28 +555,48 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
     // Urdu speech); converting to the selected output language happens afterwards
     // via translation. Falls back to the live transcript if nothing usable was
     // recorded or the backend errors, so direct-voice recording keeps working.
+    // Every failure below must be reported. Previously each one only logged and
+    // fell through to the live transcript — which is empty whenever the browser's
+    // speech recognition produced nothing (it needs Google's servers and is
+    // unavailable or silent in many browsers). A failed transcription therefore
+    // looked exactly like a successful empty one: recording ran, timer ran, and
+    // the Transcript panel stayed blank with nothing explaining why.
+    let sttError: string | null = null;
     try {
       setIsTranscribing(true);
       const blob = await stopAudioCaptureGetBlob();
-      if (blob && blob.size >= 2000) {
+      if (!blob || blob.size < 2000) {
+        console.warn('[transcribe] recorded blob too small/missing:', blob?.size ?? 'none');
+        sttError = 'No audio was captured. Check your microphone and try recording again.';
+      } else {
         console.log('[transcribe] sending recorded blob to backend — size (bytes):', blob.size, '| type:', blob.type);
-        const result = await transcribeAudio(blob);
-        const whisperText = (result.rawText || '').trim();
-        console.log('[transcribe] backend response — text length:', whisperText.length);
-        if (whisperText && !isLikelyHallucination(whisperText)) {
+        // Pass the chosen source language; "auto" lets Sarvam detect it.
+        const result = await transcribeAudio(blob, language);
+        const sttText = (result.rawText || '').trim();
+        console.log('[transcribe] backend response — text length:', sttText.length);
+        if (!sttText) {
+          sttError = 'No speech detected. Please try recording again.';
+        } else if (isLikelyHallucination(sttText)) {
+          sttError = 'No clear speech was detected in the recording. Please try again.';
+        } else {
           // Append the accurate transcription after any pre-recording transcript.
           finalText = (recordingBaseRef.current
-            ? `${recordingBaseRef.current} ${whisperText}`
-            : whisperText).trim();
+            ? `${recordingBaseRef.current} ${sttText}`
+            : sttText).trim();
         }
-      } else {
-        console.warn('[transcribe] recorded blob too small/missing — keeping live transcript:', blob?.size ?? 'none');
       }
     } catch (err) {
-      console.error('[transcribe] backend error — keeping live transcript:', err);
+      console.error('[transcribe] backend error:', err);
+      sttError = err instanceof Error && err.message
+        ? err.message
+        : 'Unable to transcribe audio. Please try recording again.';
     } finally {
       setIsTranscribing(false);
     }
+
+    // Only surface the failure if it actually cost a transcript. When live
+    // recognition captured the words anyway, the session is still usable.
+    if (sttError && !finalText) setError(sttError);
 
     // originalTranscript = exact spoken words in the detected language (source of
     // truth). displayedTranscript = converted into the selected output language.
@@ -839,7 +874,7 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
         // words from THIS recording (best accuracy for mixed Hindi/English/Urdu).
         // Conversion into the selected output language happens afterwards.
         console.log('[transcribe] sending file — size (bytes):', audioBlob.size, '| type:', audioBlob.type || mimeType);
-        const result = await transcribeAudio(audioBlob);
+        const result = await transcribeAudio(audioBlob, language);
         const text = (result.rawText || '').trim();
         console.log('[transcribe] API response — text length:', text.length);
 
@@ -857,6 +892,8 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
           setOriginalTranscript(newOriginal);
           setIsTranscribing(false);
           setDisplayedTranscript(await toOutputLanguage(newOriginal));
+        } else {
+          setError('No speech detected. Please try recording again.');
         }
       } catch (err) {
         console.error('[transcribe] API error:', err);
@@ -1091,7 +1128,8 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
     const html = buildReportHtml(reportData, {
       patientName: consultation.patientName,
       date: consultation.date,
-      doctorName: doctorName.trim() || undefined,
+      doctorName: doctorName.trim() || doctor?.name || undefined,
+      doctorDesignation: doctorDesignation.trim() || doctor?.specialization || undefined,
     });
     const w = window.open('', '_blank');
     if (!w) {
@@ -1110,7 +1148,8 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
   const exportMeta = {
     patientName: consultation.patientName,
     date: consultation.date,
-    doctorName: doctorName.trim() || undefined,
+    doctorName: doctorName.trim() || doctor?.name || undefined,
+    doctorDesignation: doctorDesignation.trim() || doctor?.specialization || undefined,
   };
   type DownloadModule = typeof import('../utils/download');
   const runDownload = (pick: (m: DownloadModule) => void | Promise<void>) => {
@@ -2129,6 +2168,15 @@ export default function ConsultationWorkspace({ consultation, patientHistory, on
                     value={doctorName}
                     onChange={e => setDoctorName(e.target.value)}
                     placeholder="Dr. Full Name"
+                    className={inputCls}
+                  />
+                </label>
+                <label className="flex flex-col gap-0.5 mb-3">
+                  <span className={fieldLabelCls}>Designation</span>
+                  <input
+                    value={doctorDesignation}
+                    onChange={e => setDoctorDesignation(e.target.value)}
+                    placeholder="e.g. Cardiologist"
                     className={inputCls}
                   />
                 </label>

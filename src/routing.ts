@@ -18,10 +18,13 @@ export const APP_PATHS = [
   '/reports',
   '/prescriptions',
   '/settings',
+  '/profile',
 ] as const;
 
 export const LOGIN_PATH = '/login';
 export const SIGNUP_PATH = '/signup';
+/** Opened from the emailed reset link; public, and carries ?token=. */
+export const RESET_PATH = '/reset-password';
 export const LANDING_PATH = '/';
 export const HOME_PATH = '/dashboard';
 
@@ -32,7 +35,7 @@ export const isAppPath = (path: string): boolean =>
   (APP_PATHS as readonly string[]).includes(path);
 
 export const isAuthPath = (path: string): boolean =>
-  path === LOGIN_PATH || path === SIGNUP_PATH;
+  path === LOGIN_PATH || path === SIGNUP_PATH || path === RESET_PATH;
 
 /** Push (or replace) a URL and let every usePathname() subscriber re-render. */
 export function navigate(path: string, { replace = false }: { replace?: boolean } = {}): void {

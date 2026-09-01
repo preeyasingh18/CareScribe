@@ -35,7 +35,6 @@ export default function AuthLoading() {
       <div className="relative mt-6 text-lg font-bold tracking-tight">
         <span className="text-brand-950">Care</span>
         <span className="text-brand-600">Scribe</span>
-        <span className="ml-1 align-top text-[10px] font-semibold text-brand-400">AI</span>
       </div>
 
       {/* Indeterminate progress rail — a track with a violet sweep. */}

@@ -171,9 +171,6 @@ export default function Logo({
         <span className="font-bold text-xl tracking-tight">
           <span className={light ? 'text-white' : 'text-brand-950'}>Care</span>
           <span className={light ? 'text-brand-300' : 'text-brand-600'}>Scribe</span>
-          <span className={`ml-1 align-top text-xs font-semibold ${light ? 'text-brand-400' : 'text-brand-400'}`}>
-            AI
-          </span>
         </span>
         {tagline && (
           <span

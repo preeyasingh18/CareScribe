@@ -22,6 +22,7 @@ const DashboardView = lazy(() => import('./components/DashboardView'));
 const PatientSelectModal = lazy(() => import('./components/PatientSelectModal'));
 const ConsultationWorkspace = lazy(() => import('./components/ConsultationWorkspace'));
 const PatientsView = lazy(() => import('./components/PatientsView'));
+const ProfileView = lazy(() => import('./components/ProfileView'));
 const GenericListView = lazy(() => import('./components/GenericListView'));
 import {
   getPatients,
@@ -34,11 +35,11 @@ import {
 } from './services/api';
 import { medicationsToText } from './utils/report';
 import { useAuth, initialsFor } from './auth/AuthContext';
-import { navigate, LANDING_PATH } from './routing';
+import { navigate, LOGIN_PATH } from './routing';
 import { showToast } from './components/Toast';
 
 // Main Views
-type ViewState = 'dashboard' | 'patients' | 'consultations' | 'transcripts' | 'reports' | 'prescriptions' | 'settings';
+type ViewState = 'dashboard' | 'patients' | 'consultations' | 'transcripts' | 'reports' | 'prescriptions' | 'settings' | 'profile';
 
 // URL path <-> view mapping so each page has its own address bar URL.
 const VIEW_TO_PATH: Record<ViewState, string> = {
@@ -49,6 +50,7 @@ const VIEW_TO_PATH: Record<ViewState, string> = {
   reports: '/reports',
   prescriptions: '/prescriptions',
   settings: '/settings',
+  profile: '/profile',
 };
 
 const VIEW_TITLES: Record<ViewState, string> = {
@@ -59,6 +61,7 @@ const VIEW_TITLES: Record<ViewState, string> = {
   reports: 'AI Reports',
   prescriptions: 'Prescriptions',
   settings: 'Settings',
+  profile: 'Profile',
 };
 
 const pathToView = (path: string): ViewState => {
@@ -231,7 +234,7 @@ export default function App() {
       const method = window.location.pathname === '/' ? 'replaceState' : 'pushState';
       window.history[method]({ view: activeView }, '', path);
     }
-    document.title = `CareScribe AI — ${VIEW_TITLES[activeView]}`;
+    document.title = `CareScribe — ${VIEW_TITLES[activeView]}`;
   }, [activeView]);
 
   // Reflect browser back/forward navigation back into the active page.
@@ -256,7 +259,7 @@ export default function App() {
     setIsPatientModalOpen(false);
     setIsMobileMenuOpen(false);
     showToast('Signed out successfully.');
-    navigate(LANDING_PATH, { replace: true });
+    navigate(LOGIN_PATH, { replace: true });
   };
 
   // Handlers
@@ -475,6 +478,8 @@ export default function App() {
             Language & Microphone configurations.
           </div>
         );
+      case 'profile':
+        return <ProfileView />;
       default:
         return null;
     }

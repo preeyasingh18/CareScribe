@@ -13,6 +13,7 @@ import {
   LANDING_PATH,
   LOGIN_PATH,
   SIGNUP_PATH,
+  RESET_PATH,
   HOME_PATH,
 } from './routing';
 
@@ -20,6 +21,7 @@ import {
 // and a signed-in doctor deep-linking to /dashboard never downloads the site.
 const App = lazy(() => import('./App'));
 const AuthPage = lazy(() => import('./auth/AuthPage'));
+const ResetPassword = lazy(() => import('./auth/ResetPassword'));
 
 /**
  * Top-level surface switch.
@@ -88,7 +90,7 @@ function Surfaces() {
   // any attempt to sit on an auth page just forwards them into the dashboard.
   useEffect(() => {
     if (!ready) return;
-    if (doctor && isAuthPath(path)) navigate(HOME_PATH, { replace: true });
+    if (doctor && isAuthPath(path) && path !== RESET_PATH) navigate(HOME_PATH, { replace: true });
     if (!doctor && isAppPath(path)) navigate(LOGIN_PATH, { replace: true });
   }, [ready, doctor, path]);
 
@@ -106,6 +108,15 @@ function Surfaces() {
     return (
       <Suspense fallback={<AuthLoading />}>
         <App />
+      </Suspense>
+    );
+  }
+
+  if (path === RESET_PATH) {
+    // Reached from an emailed link, so it renders regardless of session state.
+    return (
+      <Suspense fallback={<AuthLoading />}>
+        <ResetPassword />
       </Suspense>
     );
   }

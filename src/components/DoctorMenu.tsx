@@ -12,9 +12,11 @@ import { useAuth, initialsFor } from '../auth/AuthContext';
  * name, so an account with no picture still reads as a person.
  */
 export default function DoctorMenu({
+  onNavigateProfile,
   onNavigateSettings,
   onSignOut,
 }: {
+  onNavigateProfile: () => void;
   onNavigateSettings: () => void;
   onSignOut: () => void;
 }) {
@@ -74,7 +76,7 @@ export default function DoctorMenu({
                 role="menuitem"
                 onClick={() => {
                   setOpen(false);
-                  onNavigateSettings();
+                  onNavigateProfile();
                 }}
                 className={`${item} text-slate-700 hover:bg-brand-50 hover:text-brand-700`}
               >

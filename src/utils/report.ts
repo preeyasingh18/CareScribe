@@ -361,7 +361,9 @@ function escapeHtml(s: string): string {
 export interface ReportMeta {
   patientName?: string;
   date?: string;
+  /** The signed-in doctor, filled in from the session — never typed by hand. */
   doctorName?: string;
+  doctorDesignation?: string;
 }
 
 function tableHtml(columns: ColumnDef[], rows: Record<string, any>[]): string {
@@ -461,11 +463,12 @@ export function buildReportHtml(report: ReportData, meta: ReportMeta = {}): stri
   .signature { margin-top: 36px; page-break-inside: avoid; display: flex; justify-content: flex-end; }
   .signature .box { width: 240px; text-align: center; border-top: 1px solid #334155; padding-top: 5px; font-size: 11px; color: #334155; }
   .signature .name { font-weight: 700; color: #0f172a; }
+  .signature .designation { color: #475569; font-size: 10.5px; margin-bottom: 2px; }
 </style>
 </head>
 <body>
   <div class="header">
-    <div class="brand">CareScribe AI</div>
+    <div class="brand">CareScribe</div>
     <h1>Clinical Report</h1>
     ${sub ? `<div class="sub">${sub}</div>` : ''}
   </div>
@@ -473,6 +476,7 @@ export function buildReportHtml(report: ReportData, meta: ReportMeta = {}): stri
   <div class="signature">
     <div class="box">
       <div class="name">${escapeHtml(meta.doctorName || 'Attending Physician')}</div>
+      ${meta.doctorDesignation ? `<div class="designation">${escapeHtml(meta.doctorDesignation)}</div>` : ''}
       <div>Doctor's Signature</div>
     </div>
   </div>

@@ -5,6 +5,7 @@ import { LogoMark } from '../components/Logo';
 import Waveform from '../landing/Waveform';
 import { EASE_OUT } from '../landing/motion';
 import { useAuth } from './AuthContext';
+import ForgotPassword from './ForgotPassword';
 import { navigate, LANDING_PATH, LOGIN_PATH, SIGNUP_PATH, HOME_PATH } from '../routing';
 
 const HIGHLIGHTS = [
@@ -24,6 +25,8 @@ export default function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Password reset takes over the form panel; the brand panel stays as it is.
+  const [forgot, setForgot] = useState(false);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -92,7 +95,6 @@ export default function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
           <span className="text-xl font-bold tracking-tight">
             <span className="text-white">Care</span>
             <span className="text-brand-300">Scribe</span>
-            <span className="ml-1 align-top text-xs font-semibold text-brand-400">AI</span>
           </span>
         </button>
 
@@ -126,6 +128,15 @@ export default function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
 
       {/* Form panel */}
       <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-10">
+        {forgot ? (
+          <ForgotPassword
+            onBackToLogin={() => {
+              setForgot(false);
+              setError(null);
+              navigate(LOGIN_PATH);
+            }}
+          />
+        ) : (
         <motion.div
           className="w-full max-w-md"
           initial={{ opacity: 0, y: 16 }}
@@ -225,11 +236,10 @@ export default function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
               <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={() =>
-                    setError(
-                      'Password recovery is not set up yet — it needs an email provider on the server. Ask your administrator to reset the account.',
-                    )
-                  }
+                  onClick={() => {
+                    setError(null);
+                    setForgot(true);
+                  }}
                   className="text-xs font-medium text-slate-500 transition-colors hover:text-brand-700"
                 >
                   Forgot password?
@@ -271,11 +281,12 @@ export default function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
           <p className="mt-8 flex items-start gap-2 rounded-xl bg-slate-50 px-4 py-3 text-[11px] leading-relaxed text-slate-500">
             <ShieldCheck size={14} className="mt-px flex-shrink-0 text-brand-500" />
             <span>
-              Your password is hashed on the server with bcrypt and never stored in this browser.
-              The session is an httpOnly cookie that JavaScript cannot read.
+              Your password is encrypted before it is stored and is never kept in this browser.
+              Your sign-in stays private to you.
             </span>
           </p>
         </motion.div>
+        )}
       </div>
     </div>
   );

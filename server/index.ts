@@ -15,11 +15,28 @@ import {
   verifyPassword,
   validateSignup,
   authConfigured,
+  validateProfile,
+  generateResetToken,
+  parseResetToken,
+  hashSecret,
+  verifySecret,
+  validateNewPassword,
+  RESET_TTL_MINUTES,
+  RESET_MAX_SENDS,
+  RESET_SEND_WINDOW_MINUTES,
   isDatabaseUnavailable,
   DB_UNAVAILABLE_MESSAGE,
   type AuthedRequest,
 } from './auth';
 import { Doctor, toPublic, type DoctorDoc } from './models/Doctor';
+import { PasswordReset, type PasswordResetDoc } from './models/PasswordReset';
+import {
+  SEND_FAILED_MESSAGE,
+  ensureEmailReady,
+  maskEmail,
+  sendResetLink,
+  verifyEmailTransport,
+} from './services/notify';
 import {
   patientsRepo,
   consultationsRepo,
@@ -273,6 +290,7 @@ app.post('/api/translate-transcript', requireAuth, async (req, res) => {
 // Report Generation (OpenAI)
 // ─────────────────────────────────────────────────────────────
 app.post('/api/generate-report', requireAuth, async (req, res) => {
+  const startedAt = Date.now();
   try {
     const { transcript } = req.body;
 
@@ -280,12 +298,23 @@ app.post('/api/generate-report', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Transcript is required' });
     }
 
+    // Only the transcript is sent to the model — no session, patient or doctor
+    // record, and no previous report.
+    console.log('[REPORT] request received | transcript chars:', String(transcript).length);
+
     const { generateMedicalReport } = await import('./services/report');
     const report = await generateMedicalReport(transcript);
 
+    console.log('[REPORT] total:', Date.now() - startedAt, 'ms');
     return res.json(report);
   } catch (error: any) {
-    console.error('[generate-report]', error);
+    console.error('[generate-report] failed after', Date.now() - startedAt, 'ms:', error?.message || error);
+
+    if (error?.timeout) {
+      return res.status(504).json({
+        error: 'Report generation is taking longer than expected. Please try again.',
+      });
+    }
 
     const detail =
       error?.message ||
@@ -419,6 +448,216 @@ app.get('/api/auth/me', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// Password reset (forgot password) — emailed link, Gmail SMTP
+//
+//   1. /auth/forgot-password    email the account a single-use reset link
+//   2. /auth/reset-token        the reset page checks the link is still valid
+//   3. /auth/reset-password     the link is spent to set the new password
+//
+// Tokens are random, stored hashed, expire in minutes and are single-use, and
+// the number of links per account is capped.
+// ─────────────────────────────────────────────────────────────
+
+/** Where the browser app lives, for building the link in the email. */
+function appOrigin(req: express.Request): string {
+  const configured = (process.env.APP_URL || '').trim().replace(/\/+$/, '');
+  if (configured) return configured;
+  const firstCors = (process.env.CORS_ORIGIN || '').split(',')[0].trim().replace(/\/+$/, '');
+  if (firstCors) return firstCors;
+  // Dev fallback: the Vite origin that made the request.
+  const origin = (req.get('origin') || '').replace(/\/+$/, '');
+  return origin || 'http://localhost:3000';
+}
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const email = String(req.body?.email ?? '').trim().toLowerCase();
+    if (!email) return res.status(400).json({ error: 'Please enter your email address.' });
+
+    // Checked BEFORE the account lookup, and before anything is sent, so a
+    // broken mail configuration answers identically for a registered and an
+    // unregistered address. Doing this afterwards leaked which emails have
+    // accounts: unknown ones got the generic reply while real ones surfaced the
+    // SMTP error. Configuration problems are the server's fault, not the
+    // doctor's, so they are reported plainly rather than hidden.
+    const status = await ensureEmailReady();
+    if (!status.configured) {
+      // The diagnosis goes to the operator; the visitor gets a generic message.
+      console.error('[auth:forgot-password] email cannot be sent:', status.reason);
+      return res.status(503).json({ error: SEND_FAILED_MESSAGE });
+    }
+
+    await connectDB();
+    const doctor = (await Doctor.findOne({ email }).lean().exec()) as DoctorDoc | null;
+
+    // Same reply whether or not the address is registered, so this form cannot
+    // be used to discover which emails have accounts.
+    const generic = {
+      sent: true,
+      message: 'If that email has a CareScribe account, a reset link is on its way.',
+    };
+    if (!doctor) {
+      console.log('[auth:forgot-password] no account for that address; replying generically');
+      return res.json(generic);
+    }
+
+    // Rate limit per account: a reset form must not become an email cannon.
+    const windowStart = new Date(Date.now() - RESET_SEND_WINDOW_MINUTES * 60000);
+    const recent = await PasswordReset.countDocuments({
+      doctorId: doctor.id,
+      createdAt: { $gte: windowStart },
+    });
+    if (recent >= RESET_MAX_SENDS) {
+      return res.status(429).json({
+        error: `Too many reset emails requested. Please wait ${RESET_SEND_WINDOW_MINUTES} minutes and try again.`,
+      });
+    }
+
+    const { lookupId, secret, token } = generateResetToken();
+    const link = `${appOrigin(req)}/reset-password?token=${encodeURIComponent(token)}`;
+
+    // Send FIRST. If Gmail rejects it, nothing is stored and the doctor is told
+    // the truth rather than being sent to wait for mail that never left.
+    try {
+      await sendResetLink(doctor.email, link, RESET_TTL_MINUTES);
+    } catch (err: any) {
+      console.error('[auth:forgot-password] delivery failed:', err?.message || err);
+      return res.status(err?.notConfigured ? 503 : 502).json({ error: SEND_FAILED_MESSAGE });
+    }
+
+    // Any earlier unused link is void once a new one goes out.
+    await PasswordReset.deleteMany({ doctorId: doctor.id, usedAt: null });
+    await PasswordReset.create({
+      id: crypto.randomUUID(),
+      doctorId: doctor.id,
+      lookupId,
+      tokenHash: await hashSecret(secret),
+      expiresAt: new Date(Date.now() + RESET_TTL_MINUTES * 60000),
+    });
+    console.log(`[auth:forgot-password] reset link emailed, expires in ${RESET_TTL_MINUTES}m`);
+
+    return res.json(generic);
+  } catch (error) {
+    if (isDatabaseUnavailable(error)) return res.status(503).json({ error: DB_UNAVAILABLE_MESSAGE });
+    console.error('[auth:forgot-password]', error);
+    return res.status(500).json({ error: 'Could not start the password reset.' });
+  }
+});
+
+/** Resolve a token to its still-valid reset row, or null. */
+async function findResetByToken(
+  token: unknown,
+): Promise<{ attempt: PasswordResetDoc; doctor: DoctorDoc } | null> {
+  const parts = parseResetToken(token);
+  if (!parts) return null;
+
+  const attempt = (await PasswordReset.findOne({
+    lookupId: parts.lookupId,
+    usedAt: null,
+    expiresAt: { $gt: new Date() },
+  })
+    .lean()
+    .exec()) as PasswordResetDoc | null;
+  if (!attempt) return null;
+  if (!(await verifySecret(parts.secret, attempt.tokenHash))) return null;
+
+  const doctor = (await Doctor.findOne({ id: attempt.doctorId }).lean().exec()) as DoctorDoc | null;
+  return doctor ? { attempt, doctor } : null;
+}
+
+// The reset page calls this on load so an expired link says so immediately
+// instead of after the doctor has typed a new password.
+app.post('/api/auth/reset-token', async (req, res) => {
+  try {
+    await connectDB();
+    const found = await findResetByToken(req.body?.token);
+    if (!found) {
+      return res.status(400).json({ error: 'This reset link is invalid or has expired. Please request a new one.' });
+    }
+    return res.json({ valid: true, email: maskEmail(found.doctor.email) });
+  } catch (error) {
+    if (isDatabaseUnavailable(error)) return res.status(503).json({ error: DB_UNAVAILABLE_MESSAGE });
+    console.error('[auth:reset-token]', error);
+    return res.status(500).json({ error: 'Could not check that reset link.' });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const invalid = validateNewPassword(req.body?.password, req.body?.confirmPassword);
+    if (invalid) return res.status(400).json({ error: invalid });
+
+    await connectDB();
+    const found = await findResetByToken(req.body?.token);
+    if (!found) {
+      return res.status(400).json({ error: 'This reset link is invalid or has expired. Please request a new one.' });
+    }
+
+    // Burn the link in the same breath as changing the password, so it can
+    // never be replayed.
+    await PasswordReset.updateOne({ id: found.attempt.id }, { $set: { usedAt: new Date() } });
+    await Doctor.updateOne(
+      { id: found.doctor.id },
+      { $set: { passwordHash: await hashPassword(String(req.body.password)) } },
+    );
+    await PasswordReset.deleteMany({ doctorId: found.doctor.id, usedAt: null });
+    console.log('[auth:reset-password] password changed via reset link');
+
+    return res.json({ success: true });
+  } catch (error) {
+    if (isDatabaseUnavailable(error)) return res.status(503).json({ error: DB_UNAVAILABLE_MESSAGE });
+    console.error('[auth:reset-password]', error);
+    return res.status(500).json({ error: 'Could not reset the password.' });
+  }
+});
+
+// Update the signed-in doctor's own profile. The record is located by the id
+// on the session, never by an id in the request, so there is no parameter to
+// tamper with: a doctor can only ever edit themselves.
+app.patch('/api/auth/profile', requireAuth, async (req: AuthedRequest, res) => {
+  try {
+    // PATCH semantics: a field the caller did not send keeps its current
+    // value. Without this, a body carrying only { phoneNumber } would blank the
+    // doctor's specialization and hospital as a side effect.
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const current = req.doctor!;
+    const merged = {
+      name: 'name' in body ? body.name : current.name,
+      specialization: 'specialization' in body ? body.specialization : current.specialization,
+      phoneNumber: 'phoneNumber' in body ? body.phoneNumber : current.phoneNumber,
+      hospitalName: 'hospitalName' in body ? body.hospitalName : current.hospitalName,
+    };
+
+    const parsed = validateProfile(merged);
+    if (parsed.error || !parsed.value) {
+      return res.status(400).json({ error: parsed.error || 'Invalid details.' });
+    }
+
+    await connectDB();
+    const updated = (await Doctor.findOneAndUpdate(
+      { id: req.doctor!.id },
+      { $set: parsed.value },
+      { new: true },
+    )
+      .lean()
+      .exec()) as DoctorDoc | null;
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Your account could not be found.' });
+    }
+
+    return res.json({ doctor: toPublic(updated) });
+  } catch (error) {
+    if (isDatabaseUnavailable(error)) {
+      console.error('[auth:profile] database unavailable');
+      return res.status(503).json({ error: DB_UNAVAILABLE_MESSAGE });
+    }
+    console.error('[auth:profile]', error);
+    return res.status(500).json({ error: 'Could not save your profile.' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // Patients
 // ─────────────────────────────────────────────────────────────
 app.get('/api/patients', requireAuth, async (req: AuthedRequest, res) => {
@@ -546,10 +785,16 @@ app.get('/api/stats', requireAuth, async (req: AuthedRequest, res) => {
 // ─────────────────────────────────────────────────────────────
 // Config / capability checks
 // ─────────────────────────────────────────────────────────────
-app.get('/api/config-test', (_req, res) => {
+app.get('/api/config-test', async (_req, res) => {
+  // Reset email reports whether Gmail actually ACCEPTS the credentials, not
+  // merely whether the variables are present — a rejected App Password would
+  // otherwise be reported as "configured" right up until someone tried to use
+  // it. The credentials themselves are never included.
+  const mail = await ensureEmailReady();
   res.json({
     sarvam: !!(process.env.SARVAM_API_KEY || '').trim(),
     auth: authConfigured(),
+    resetEmail: mail.configured,
     database: 'mongodb',
   });
 });
@@ -601,10 +846,17 @@ app.listen(PORT, async () => {
     dbStatus = `Connection failed: ${error?.message || error}`;
   }
 
+  // Check the Gmail credentials at startup rather than letting a wrong App
+  // Password surface as a mystery failure the first time someone resets.
+  const mail = await verifyEmailTransport();
+  const mailStatus = mail.configured ? 'Ready (Gmail SMTP)' : 'NOT CONFIGURED';
+
   console.log('');
   console.log('🚀 CareScribe API Started');
   console.log(`🌐 Server : http://localhost:${PORT}`);
   console.log(`🗄️ Database : ${dbStatus}`);
+  console.log(`📧 Reset email : ${mailStatus}`);
+  if (!mail.configured) console.error(`   ↳ ${mail.reason}`);
   console.log(`❤️ Health : http://localhost:${PORT}/api/health`);
   console.log('');
 

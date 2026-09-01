@@ -4,8 +4,10 @@ import {
   signUpDoctor,
   logInDoctor,
   logOutDoctor,
+  updateDoctorProfile,
   setUnauthorizedHandler,
   type Doctor,
+  type ProfileUpdate,
 } from '../services/api';
 
 /**
@@ -40,6 +42,13 @@ interface AuthValue {
     specialization: string;
   }) => Promise<void>;
   signOut: () => Promise<void>;
+  /**
+   * Save the signed-in doctor's profile and adopt the server's response as the
+   * new session state, so the sidebar and menu update with it. The server is
+   * the source of truth for what was stored — the form's own values are not
+   * written back optimistically.
+   */
+  updateProfile: (input: ProfileUpdate) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -93,6 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const updateProfile = useCallback(async (input: ProfileUpdate) => {
+    setDoctor(await updateDoctorProfile(input));
+  }, []);
+
   const signOut = useCallback(async () => {
     try {
       await logOutDoctor();
@@ -104,8 +117,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({ doctor, ready, signIn, signUp, signOut }),
-    [doctor, ready, signIn, signUp, signOut],
+    () => ({ doctor, ready, signIn, signUp, signOut, updateProfile }),
+    [doctor, ready, signIn, signUp, signOut, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

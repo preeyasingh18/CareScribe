@@ -59,8 +59,8 @@ export default function Hero({ animateIn }: { animateIn: boolean }) {
           </motion.h1>
 
           <motion.p {...rise(0.2)} className="mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-            CareScribe AI listens to your consultation, converts conversations into accurate
-            transcripts, and transforms them into structured clinical documentation — so doctors can
+            CareScribe listens to your consultation, converts conversations into accurate
+            transcripts, and transforms them into structured clinical documentation, so doctors can
             spend less time documenting and more time caring for patients.
           </motion.p>
 
