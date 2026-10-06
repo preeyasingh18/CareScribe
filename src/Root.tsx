@@ -10,6 +10,7 @@ import {
   navigate,
   isAppPath,
   isAuthPath,
+  isAdminPath,
   LANDING_PATH,
   LOGIN_PATH,
   SIGNUP_PATH,
@@ -22,6 +23,8 @@ import {
 const App = lazy(() => import('./App'));
 const AuthPage = lazy(() => import('./auth/AuthPage'));
 const ResetPassword = lazy(() => import('./auth/ResetPassword'));
+// Lazy like the rest, so an ordinary visitor never downloads the admin view.
+const AdminPage = lazy(() => import('./admin/AdminPage'));
 
 /**
  * Top-level surface switch.
@@ -29,6 +32,7 @@ const ResetPassword = lazy(() => import('./auth/ResetPassword'));
  *   /                     public landing page (preceded by the intro animation)
  *   /login, /signup       authentication
  *   /dashboard, ...       the existing dashboard shell, behind the auth gate
+ *   /admin                read-only admin view, behind its own password
  *
  * The dashboard itself (App.tsx) is untouched — it still owns its own view
  * routing once Root has decided it is allowed to render.
@@ -94,6 +98,17 @@ function Surfaces() {
     if (!doctor && isAppPath(path)) navigate(LOGIN_PATH, { replace: true });
   }, [ready, doctor, path]);
 
+  // /admin has nothing to do with a doctor session: it has its own password and
+  // its own cookie, and it must render whether or not anyone is signed in. It is
+  // handled before the session gate below so the two never interfere.
+  if (isAdminPath(path)) {
+    return (
+      <Suspense fallback={<AuthLoading />}>
+        <AdminPage />
+      </Suspense>
+    );
+  }
+
   // The intro is itself a loading screen, so while it is running we let it cover
   // the session check rather than stacking two splashes on top of each other.
   // Everywhere else, hold the first paint until the check resolves: otherwise a
@@ -147,7 +162,7 @@ export default function Root() {
   // a blank screen — the SPA host rewrites everything to index.html.
   useEffect(() => {
     const p = window.location.pathname;
-    if (p !== LANDING_PATH && !isAppPath(p) && !isAuthPath(p)) {
+    if (p !== LANDING_PATH && !isAppPath(p) && !isAuthPath(p) && !isAdminPath(p)) {
       navigate(LANDING_PATH, { replace: true });
     }
   }, []);

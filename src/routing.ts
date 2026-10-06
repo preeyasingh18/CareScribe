@@ -25,6 +25,8 @@ export const LOGIN_PATH = '/login';
 export const SIGNUP_PATH = '/signup';
 /** Opened from the emailed reset link; public, and carries ?token=. */
 export const RESET_PATH = '/reset-password';
+/** Read-only admin view. Its own password and session, separate from a doctor's. */
+export const ADMIN_PATH = '/admin';
 export const LANDING_PATH = '/';
 export const HOME_PATH = '/dashboard';
 
@@ -36,6 +38,8 @@ export const isAppPath = (path: string): boolean =>
 
 export const isAuthPath = (path: string): boolean =>
   path === LOGIN_PATH || path === SIGNUP_PATH || path === RESET_PATH;
+
+export const isAdminPath = (path: string): boolean => path === ADMIN_PATH;
 
 /** Push (or replace) a URL and let every usePathname() subscriber re-render. */
 export function navigate(path: string, { replace = false }: { replace?: boolean } = {}): void {

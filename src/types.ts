@@ -144,6 +144,8 @@ export interface ConsultationHistoryItem {
   chiefComplaints: string[];
   diagnosis: string[];
   medicines: HistoryMedicine[];
+  doctorNotes: string;
+  advice: string[];
   reportStatus: 'Draft' | 'Completed';
   followUp: string;
   reportId: string | null;

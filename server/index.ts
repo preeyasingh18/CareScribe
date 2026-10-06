@@ -44,6 +44,8 @@ import {
   reportsRepo,
   prescriptionsRepo,
 } from './repositories';
+import { registerAdminRoutes } from './adminRoutes';
+import { adminConfigured } from './admin';
 
 dotenv.config();
 
@@ -694,6 +696,18 @@ app.get('/api/patients/:patientId/history', requireAuth, async (req: AuthedReque
     if (!patientId) {
       return res.status(400).json({ error: 'patientId is required' });
     }
+    // Confirm the patient is this doctor's before building anything. The
+    // history query is already scoped by doctorId, so a foreign id could only
+    // ever return an empty list — but that reads to the doctor as "no visits
+    // recorded" when the truthful answer is "no such patient of yours". The
+    // lookup is itself scoped, so someone else's patient and a patient that
+    // does not exist produce the same 404 and neither confirms the other's
+    // existence.
+    const patient = await patientsRepo.findById(req.doctor!.id, patientId);
+    if (!patient) {
+      return res.status(404).json({ error: 'Patient not found.' });
+    }
+
     const order = req.query.order === 'desc' ? 'desc' : 'asc';
     const { buildPatientHistory } = await import('./services/patientHistory');
     const history = await buildPatientHistory(req.doctor!.id, patientId, order);
@@ -783,6 +797,15 @@ app.get('/api/stats', requireAuth, async (req: AuthedRequest, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// Admin (read-only)
+//
+// A separate, self-contained set of endpoints behind their own password and
+// their own session cookie. Nothing above is affected by it: it adds no writes,
+// touches no schema, and shares no state with the doctor session.
+// ─────────────────────────────────────────────────────────────
+registerAdminRoutes(app);
+
+// ─────────────────────────────────────────────────────────────
 // Config / capability checks
 // ─────────────────────────────────────────────────────────────
 app.get('/api/config-test', async (_req, res) => {
@@ -794,6 +817,8 @@ app.get('/api/config-test', async (_req, res) => {
   res.json({
     sarvam: !!(process.env.SARVAM_API_KEY || '').trim(),
     auth: authConfigured(),
+    // Whether an admin password is set — never the password itself.
+    admin: adminConfigured(),
     resetEmail: mail.configured,
     database: 'mongodb',
   });

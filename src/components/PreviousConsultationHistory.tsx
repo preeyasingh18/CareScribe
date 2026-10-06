@@ -9,10 +9,12 @@ import {
   ClipboardList,
   CalendarClock,
   ArrowDownUp,
+  NotebookPen,
+  LogIn,
   X,
 } from 'lucide-react';
 import { ConsultationHistoryItem } from '../types';
-import { getPatientHistory } from '../services/api';
+import { getPatientHistory, SIGN_IN_REQUIRED } from '../services/api';
 
 interface PreviousConsultationHistoryProps {
   patientId: string;
@@ -142,6 +144,11 @@ export default function PreviousConsultationHistory({
           <span className="w-4 h-4 border-2 border-slate-300 border-t-brand-600 rounded-full animate-spin" />
           Loading consultation history…
         </div>
+      ) : error === SIGN_IN_REQUIRED ? (
+        <div className="flex items-center justify-center gap-2 text-sm text-slate-600 bg-white border border-dashed border-slate-200 rounded-lg px-4 py-8">
+          <LogIn size={15} className="text-slate-400" />
+          {error}
+        </div>
       ) : error ? (
         <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5">
           {error}
@@ -227,6 +234,24 @@ export default function PreviousConsultationHistory({
                       <Detail icon={<CalendarClock size={13} />} label="Follow-up Recommendation">
                         {item.followUp ? item.followUp : <span className="text-slate-400">None</span>}
                       </Detail>
+
+                      {item.advice.length > 0 && (
+                        <Detail icon={<ClipboardList size={13} />} label="Advice Given">
+                          <ul className="list-disc list-inside space-y-0.5">
+                            {item.advice.map((a, i) => (
+                              <li key={i}>{a}</li>
+                            ))}
+                          </ul>
+                        </Detail>
+                      )}
+
+                      {/* Only rendered when the clinician actually wrote
+                          something — an empty notes field is not a finding. */}
+                      {item.doctorNotes && (
+                        <Detail icon={<NotebookPen size={13} />} label="Doctor's Notes">
+                          <p className="whitespace-pre-wrap">{item.doctorNotes}</p>
+                        </Detail>
+                      )}
                     </div>
 
                     {/* Actions */}

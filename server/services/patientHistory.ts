@@ -34,6 +34,10 @@ export interface ConsultationHistoryItem {
   chiefComplaints: string[];
   diagnosis: string[];
   medicines: HistoryMedicine[];
+  // Free-text notes the clinician recorded, and the advice given. Both are
+  // existing report fields; older records simply have neither.
+  doctorNotes: string;
+  advice: string[];
   reportStatus: 'Draft' | 'Completed';
   followUp: string;
   reportId: string | null;
@@ -156,6 +160,8 @@ export async function buildPatientHistory(
       chiefComplaints: extractChiefComplaints(report),
       diagnosis: extractDiagnosis(report),
       medicines: extractMedicines(report, c),
+      doctorNotes: asString(report?.notes),
+      advice: cleanStrings(report?.advice),
       reportStatus: toReportStatus(c?.status),
       followUp: extractFollowUp(report),
       reportId: hasReportRecord ? c.id : null,

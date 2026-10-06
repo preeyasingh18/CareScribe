@@ -366,17 +366,43 @@ export async function getConsultations(): Promise<Consultation[]> {
   return res.json();
 }
 
+/**
+ * What the doctor is told when the history cannot be loaded.
+ *
+ * Mapped from the status rather than echoed from the response body: the server's
+ * own wording is written for a developer reading a log ("Not signed in."), and
+ * putting it on the page both reads as a bug and risks leaking detail about why
+ * a request failed.
+ */
+/** Shown when the session is genuinely gone — a state, not a failure. */
+export const SIGN_IN_REQUIRED = 'Please sign in to view patient records.';
+
+const HISTORY_ERROR: Record<number, string> = {
+  401: SIGN_IN_REQUIRED,
+  403: "You don't have permission to view this patient's records.",
+  404: 'Patient not found.',
+};
+
 // Fetch a single patient's previous consultation history (grouped, read-only).
 // Defaults to oldest → newest; pass order='desc' to reverse.
+//
+// Goes through apiFetch like every other data call. A plain fetch() here sent no
+// session cookie the moment the API answered from another origin — which is both
+// the deployed layout and what VITE_API_BASE_URL does locally — so the endpoint
+// returned 401 and the page reported the signed-in doctor as signed out.
 export async function getPatientHistory(
   patientId: string,
   order: 'asc' | 'desc' = 'asc',
 ): Promise<ConsultationHistoryItem[]> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${BASE}/patients/${encodeURIComponent(patientId)}/history?order=${order}`,
     { cache: 'no-store' },
   );
-  if (!res.ok) throw new Error(await errorMessage(res, 'Failed to fetch consultation history'));
+  if (!res.ok) {
+    throw new Error(
+      HISTORY_ERROR[res.status] || 'Unable to load consultation history. Please try again.',
+    );
+  }
   return res.json();
 }
 
